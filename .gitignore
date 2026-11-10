@@ -1,0 +1,17 @@
+# Secrets
+.env
+
+# Generated data (page content, indexes, reports)
+data/raw/
+data/index/
+data/reports/
+data/registry.sqlite
+data/*.lock
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
