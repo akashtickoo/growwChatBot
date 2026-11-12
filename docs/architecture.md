@@ -896,7 +896,7 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 | PII detection is pattern-based and misses disguised forms ("name at gmail dot com"). | Raw text is never logged; a blocked message is never stored or shown back. |
 | English only. | Hinglish may be understood and answered in English; otherwise `not_found`. Non-English advisory phrasing is left to the LLM's `advisory` status. |
 | Depends on an external LLM API (Groq), including its rate limits and model retirements. The current key allows 8,000 tokens per minute (about 4 answers). | Templates still work when the API is down; factual questions get an "unavailable" reply (503 on the API). Optional fallback model. The model ID is config, and the evals are re-run after any model change. |
-| A fresh deployment rebuilds the index from the live pages at first start. | Cold start of a minute or more. Cards whose page changed since review are withdrawn; a page failing its sanity check is left out (seen on 13 Nov 2026: the Silver FoF page had an empty benchmark box). Re-review and re-export cards after source changes. |
+| A fresh deployment rebuilds the index from the live pages at first start. | Cold start of a minute or more. Cards whose page changed since review are withdrawn; a page failing its sanity check is left out (since 13 Nov 2026 the Silver FoF page has an empty benchmark box, so a fresh deployment has no Silver FoF documents). Re-review and re-export cards after source changes. |
 
 ---
 
@@ -904,7 +904,7 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 
 - **Human check of the coverage matrix (EV-1-07).** A second person checks 10 random cells against the live sources before `eval/fact_labels.yaml` is used.
 - **Permission for public deployment.** HDFC MF's terms limit use to personal and non-commercial (§18). Keep the Streamlit app private, and ask HDFC AMC for written permission before making it public.
-- **Gold and Silver FoF pages changed on 13 Nov 2026.** The Gold page's benchmark box text changed (same value); the Silver page shows no benchmark and a new exit-load text, so it fails the sanity check. Re-run ingestion, check the Silver page again, re-extract and review the 13 affected cards, then re-export them.
+- **Silver FoF page incomplete (since 13 Nov 2026).** HDFC MF's live page shows an empty benchmark box, so it fails the sanity check. Locally the last good copy (10 Nov) is kept; a fresh deployment has no Silver FoF documents, and its 7 cards stay withdrawn, until the page shows a benchmark again. The exit-load text is unchanged. Re-run ingestion to check; when the page passes, re-export the cards and reboot the app. (The Gold FoF page also changed that day, with the same values; its 7 cards were re-extracted and reviewed: 5 carried over, 2 approved.)
 - **Former scheme names.** Confirm the "former name" aliases in `config/schemes.yaml` against each SID during Phase 2.
 
 Resolved in Phase 1 (11 Nov 2026): the corpus (D1), the §2.1 decisions, robots.txt and terms checks, page rendering (server-side, no headless browser needed), and the UI example questions.

@@ -128,35 +128,35 @@ cards:
   verbatim_quote: 'Benchmark: Domestic Price of Physical Gold.'
   source_doc_id: hdfc-gold-etf-fof-page
   source_chunk_id: hdfc-gold-etf-fof-page#000
-  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  source_content_hash: 22fe6ef01ce85dd78686fdefda729a5583f957c75e4f4c034ae48d643c2016ef
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: null
   conflicting: 0
-  note: null
+  note: 'approval carried over: same value, quote and document'
   review_status: approved
   reviewed_at: '2026-11-12T21:01:04.380127+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:49:22.721791+00:00'
+  extracted_at: '2026-11-12T23:03:06.346532+00:00'
 - scheme_id: hdfc-gold-etf-fof
   field: exit_load
   status: found
-  value: Exit Load of 1% is payable if Units are redeemed/switched out within 15 days from the date of
-    allotment. No Exit Load is payable if Units are redeemed/switched-out on or after 15 days from the
-    date of allotment.
-  verbatim_quote: Exit Load of 1% is payable if Units are redeemed/switched out within 15 days from the
-    date of allotment. No Exit Load is payable if Units are redeemed/switched-out on or after 15 days
-    from the date of allotment.
+  value: In respect of each purchase/switch in of units-an Exit Load of 1% is payable if Units are redeemed/switched
+    out within 15 days from the date of allotment. No Exit Load is payable if Units are redeemed/switched-out
+    on or after 15 days from the date of allotment.
+  verbatim_quote: In respect of each purchase/switch in of units-an Exit Load of 1% is payable if Units
+    are redeemed/switched out within 15 days from the date of allotment. No Exit Load is payable if Units
+    are redeemed/switched-out on or after 15 days from the date of allotment.
   source_doc_id: hdfc-gold-etf-fof-page
   source_chunk_id: hdfc-gold-etf-fof-page#003
-  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  source_content_hash: 22fe6ef01ce85dd78686fdefda729a5583f957c75e4f4c034ae48d643c2016ef
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: null
   conflicting: 0
   note: null
   review_status: approved
-  reviewed_at: '2026-11-12T21:01:04.380127+00:00'
+  reviewed_at: '2026-11-12T23:04:59.968370+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:48:05.032360+00:00'
+  extracted_at: '2026-11-12T23:02:07.534228+00:00'
 - scheme_id: hdfc-gold-etf-fof
   field: expense_ratio
   status: found
@@ -165,15 +165,15 @@ cards:
     tax on management fees, if any.'
   source_doc_id: hdfc-gold-etf-fof-page
   source_chunk_id: hdfc-gold-etf-fof-page#000
-  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  source_content_hash: 22fe6ef01ce85dd78686fdefda729a5583f957c75e4f4c034ae48d643c2016ef
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: null
   conflicting: 0
-  note: null
+  note: 'approval carried over: same value, quote and document'
   review_status: approved
   reviewed_at: '2026-11-12T21:01:04.387873+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:47:48.955019+00:00'
+  extracted_at: '2026-11-12T23:02:05.849462+00:00'
 - scheme_id: hdfc-gold-etf-fof
   field: lock_in
   status: found
@@ -181,33 +181,31 @@ cards:
   verbatim_quote: 'Lock-in period: NA.'
   source_doc_id: hdfc-gold-etf-fof-page
   source_chunk_id: hdfc-gold-etf-fof-page#000
-  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  source_content_hash: 22fe6ef01ce85dd78686fdefda729a5583f957c75e4f4c034ae48d643c2016ef
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: null
   conflicting: 0
-  note: null
+  note: 'approval carried over: same value, quote and document'
   review_status: approved
   reviewed_at: '2026-11-12T21:01:04.387873+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:48:53.806612+00:00'
+  extracted_at: '2026-11-12T23:02:34.160125+00:00'
 - scheme_id: hdfc-gold-etf-fof
   field: min_lumpsum
   status: found
   value: ₹100/-
-  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter; Additional Purchase
-    (including switch-in): ₹100/- and any amount thereafter; Redemption (including switch-out): ₹100 and
-    in multiples of ₹1/- thereafter.'
+  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter'
   source_doc_id: hdfc-gold-etf-fof-kim
   source_chunk_id: hdfc-gold-etf-fof-kim#042
   source_content_hash: 1c9b690e44c0b12fd023bfdeb4808bc4204174050f3b63ed185c0a3f6ac68a52
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: '2025-11-21'
   conflicting: 0
   note: null
   review_status: approved
-  reviewed_at: '2026-11-12T21:01:04.396072+00:00'
+  reviewed_at: '2026-11-12T23:04:59.985449+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:48:34.923928+00:00'
+  extracted_at: '2026-11-12T23:02:13.857994+00:00'
 - scheme_id: hdfc-gold-etf-fof
   field: min_sip
   status: found
@@ -215,15 +213,15 @@ cards:
   verbatim_quote: 'Minimum SIP amount: ₹100.'
   source_doc_id: hdfc-gold-etf-fof-page
   source_chunk_id: hdfc-gold-etf-fof-page#000
-  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  source_content_hash: 22fe6ef01ce85dd78686fdefda729a5583f957c75e4f4c034ae48d643c2016ef
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: null
   conflicting: 0
-  note: null
+  note: 'approval carried over: same value, quote and document'
   review_status: approved
   reviewed_at: '2026-11-12T21:01:04.396072+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:48:22.448814+00:00'
+  extracted_at: '2026-11-12T23:02:08.618925+00:00'
 - scheme_id: hdfc-gold-etf-fof
   field: riskometer
   status: found
@@ -231,15 +229,15 @@ cards:
   verbatim_quote: 'Riskometer: High.'
   source_doc_id: hdfc-gold-etf-fof-page
   source_chunk_id: hdfc-gold-etf-fof-page#000
-  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
-  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  source_content_hash: 22fe6ef01ce85dd78686fdefda729a5583f957c75e4f4c034ae48d643c2016ef
+  sources_hash: d16bbbb7001ad380037764d894363d95b546a47ae25a98a3c27713781c96bdd5
   doc_as_of: null
   conflicting: 0
-  note: null
+  note: 'approval carried over: same value, quote and document'
   review_status: approved
   reviewed_at: '2026-11-12T21:01:04.396072+00:00'
   model: openai/gpt-oss-120b
-  extracted_at: '2026-11-12T20:49:09.132056+00:00'
+  extracted_at: '2026-11-12T23:02:48.065683+00:00'
 - scheme_id: hdfc-large-cap
   field: benchmark
   status: found

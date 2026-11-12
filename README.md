@@ -102,7 +102,7 @@ All settings are environment variables (`.env` locally, Secrets on Streamlit Clo
 - **Personal, non-commercial use only** under HDFC MF's terms, so the app stays private until HDFC AMC gives written permission.
 - **Groq quota:** the free key allows about 8,000 tokens per minute, roughly 4 answers per minute. Beyond that, answers wait for the quota; a paid tier or `GROQ_FALLBACK_MODEL` helps.
 - **Data freshness:** values are as fresh as the last fetch. Most values on the pages carry no date, so the footer shows when the source was last checked. NAV and returns are never quoted; performance questions link the official factsheet.
-- **Source changes:** a changed page withdraws its reviewed cards until they are reviewed again, and a page that fails its sanity check is left out. On 13 Nov 2026 the live Silver FoF page showed no benchmark and was left out of a fresh build.
+- **Source changes:** a changed page withdraws its reviewed cards until they are reviewed again, and a page that fails its sanity check is left out. Since 13 Nov 2026 the live Silver FoF page shows no benchmark, so a fresh build leaves it out and Silver FoF questions get "not found" with a link to its page until HDFC MF fixes the page.
 - **One scheme per answer:** questions about several schemes get a request to ask one at a time (one citation per answer).
 - **Rule-based checks:** advice detection and PII patterns are rules. They can refuse some harmless questions and miss disguised personal details ("name at gmail dot com").
 - **English only.** Single-turn: follow-ups like "what about its lock-in?" need the scheme named again.
