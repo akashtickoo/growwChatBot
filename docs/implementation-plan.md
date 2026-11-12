@@ -325,12 +325,14 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 ### Exit criteria
 
-- [ ] Every applicable card is reviewed against its live official source: run `python -m ingestion.review_facts`, then `python -m ingestion.run --index-only`.
+- [x] Every applicable card is reviewed: all 49 approved on 13 Nov 2026 at the owner's instruction, as one batch (each card matched its Phase 1 label; no card-by-card check against the live sources). Index `v20261112T210105Z` includes the 49 cards.
 - [x] The diff report works on a second run (49/49 skipped, no API calls, 0 changes, 0 label mismatches).
 
 ---
 
 ## Phase 4A: Guards
+
+**Status:** built on 13 Nov 2026. All EV-4A gates pass on the labeled guard set `eval/guards_set.yaml` (`python -m eval.run_guards`). See [eval-log.md](eval-log.md).
 
 **Goal:** the deterministic checks that run before retrieval (§6.2–6.4). They need no index, so this phase can run alongside Phases 1–3.
 
@@ -340,48 +342,52 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 **PII guard (`app/guards/pii.py`, §6.2)**
 
-- [ ] Patterns for PAN, Aadhaar (with Verhoeff checksum), Indian mobile numbers, email, OTP near keywords, and account/folio numbers.
-- [ ] Returns a match type only, never the matched text, so nothing sensitive is passed on or logged.
-- [ ] Exclude numbers next to "₹", "Rs", "rupees", "lakh" or "crore" from the account-number pattern, so amounts aren't blocked (EC-PII-13).
+- [x] Patterns for PAN, Aadhaar (with Verhoeff checksum), Indian mobile numbers, email, OTP near keywords, and account/folio numbers.
+- [x] Returns a match type only, never the matched text, so nothing sensitive is passed on or logged.
+- [x] Exclude numbers next to "₹", "Rs", "rupees", "lakh" or "crore" from the account-number pattern, so amounts aren't blocked (EC-PII-13).
 
 **Intent rules (`app/guards/intent.py`, §6.3)**
 
-- [ ] Keyword and regex rules for `advisory`, `performance`, `out_of_scope`, `greeting` and `factual`.
-- [ ] Fixed priority when several match: `advisory` > `performance` > `out_of_scope` > `greeting` > `factual`. For example, "Which fund has better returns?" is advisory.
-- [ ] `greeting` matches only when the whole message is a greeting, so "Hi! What's the exit load of HDFC Mid Cap?" is still answered (EC-INT-16).
-- [ ] Exception patterns so factual wording isn't refused: "should I pay", "do I have to pay", "is there a", "best way to", "return / redeem units", "portfolio of". Treat "returns" as performance only next to performance words ("1 year", "%", "CAGR", "gave") (EC-INT-02, EC-INT-03, EC-PERF-02, EC-PERF-09).
-- [ ] Recognize other AMC names for `out_of_scope`.
+- [x] Keyword and regex rules for `advisory`, `performance`, `out_of_scope`, `greeting` and `factual`.
+- [x] Fixed priority when several match: `advisory` > `performance` > `out_of_scope` > `greeting` > `factual`. For example, "Which fund has better returns?" is advisory.
+- [x] `greeting` matches only when the whole message is a greeting, so "Hi! What's the exit load of HDFC Mid Cap?" is still answered (EC-INT-16).
+- [x] Exception patterns so factual wording isn't refused: "should I pay", "do I have to pay", "is there a", "best way to", "return / redeem units", "portfolio of". Treat "returns" as performance only next to performance words ("1 year", "%", "CAGR", "gave") (EC-INT-02, EC-INT-03, EC-PERF-02, EC-PERF-09).
+- [x] Recognize other AMC names for `out_of_scope`.
 
 **Field detection (`app/retrieval/fields.py`)**
 
-- [ ] Map question words to fact-card fields ("exit load" → `exit_load`, "minimum SIP" → `min_sip`, "riskometer" / "risk level" → `riskometer`). Used by the scheme resolver and the retriever boost.
+- [x] Map question words to fact-card fields ("exit load" → `exit_load`, "minimum SIP" → `min_sip`, "riskometer" / "risk level" → `riskometer`). Used by the scheme resolver and the retriever boost.
 
 **Scheme resolver (`app/retrieval/scheme_resolver.py`, §6.4)**
 
-- [ ] Exact alias match, then `rapidfuzz` token-set ratio ≥ 85.
-- [ ] Category words ("ELSS", "silver", "gold", "multi cap") map to schemes.
-- [ ] **Before** fuzzy matching, detect other AMC names and HDFC schemes outside the corpus. Otherwise "SBI Small Cap" can match the "small cap" alias and return HDFC facts (EC-SCH-06, EC-SCH-07).
-- [ ] Detect Regular plan, IDCW option, and the plain Gold or Silver ETF (as opposed to the FoF). Their facts differ from the corpus schemes, so they must not resolve to them (EC-SCH-05, EC-SCH-09).
-- [ ] Returns one of: one scheme, general question, scheme needed but missing, several schemes, or not covered (other AMC, other HDFC scheme, Regular/IDCW plan, ETF instead of FoF).
+- [x] Exact alias match, then `rapidfuzz` ratio ≥ 85 on word windows that start with "hdfc". Changed from token-set ratio, which scores any question containing all of an alias's words as 100 and so can't tell "HDFC Small Cap" from a longer question about another scheme.
+- [x] Category words ("ELSS", "silver", "gold", "multi cap") map to schemes.
+- [x] **Before** fuzzy matching, detect other AMC names and HDFC schemes outside the corpus. Otherwise "SBI Small Cap" can match the "small cap" alias and return HDFC facts (EC-SCH-06, EC-SCH-07).
+- [x] Detect Regular plan, IDCW option, and the plain Gold or Silver ETF (as opposed to the FoF). Their facts differ from the corpus schemes, so they must not resolve to them (EC-SCH-05, EC-SCH-09).
+- [x] Generic other-HDFC words ("nifty", "liquid", "focused" …) count as "not covered" only next to "hdfc" and only when no corpus scheme is named, so "Is the benchmark of HDFC Mid Cap NIFTY Midcap 150?" still resolves to Mid Cap. Names that are never a corpus scheme (Flexi Cap, Balanced Advantage, Large & Mid Cap) are always not covered.
+- [x] Returns one of: one scheme, general question, scheme needed but missing, several schemes, or not covered (other AMC, other HDFC scheme, Regular/IDCW plan, ETF instead of FoF).
 
 ### Tests
 
-- [ ] PII true positives: valid PAN, a checksum-valid test Aadhaar number, `+91` mobile, email, "my OTP is 482913".
-- [ ] PII false positives that must **not** match: "₹500 SIP", "1 year lock-in", "expense ratio 0.75%", a 4-digit year.
-- [ ] Intent: at least 10 advisory, 5 performance and 5 factual phrasings, including the problem statement's examples.
-- [ ] Resolver: aliases, typos ("smallcap", "mid-cap"), two schemes in one question, no scheme.
-- [ ] Resolver: "SBI Small Cap", "HDFC Flexi Cap", "HDFC Mid Cap Regular" and "HDFC Gold ETF" never resolve to a corpus scheme.
-- [ ] Intent: "Hi! What's the exit load of HDFC Mid Cap?" and "Should I pay exit load if I redeem after 6 months?" are both `factual`.
-- [ ] PII: "₹1000000000" and "100000000 rupees" are not blocked.
+- [x] PII true positives: valid PAN, a checksum-valid test Aadhaar number, `+91` mobile, email, "my OTP is 482913".
+- [x] PII false positives that must **not** match: "₹500 SIP", "1 year lock-in", "expense ratio 0.75%", a 4-digit year.
+- [x] Intent: at least 10 advisory, 5 performance and 5 factual phrasings, including the problem statement's examples.
+- [x] Resolver: aliases, typos ("smallcap", "mid-cap"), two schemes in one question, no scheme.
+- [x] Resolver: "SBI Small Cap", "HDFC Flexi Cap", "HDFC Mid Cap Regular" and "HDFC Gold ETF" never resolve to a corpus scheme.
+- [x] Intent: "Hi! What's the exit load of HDFC Mid Cap?" and "Should I pay exit load if I redeem after 6 months?" are both `factual`.
+- [x] PII: "₹1000000000" and "100000000 rupees" are not blocked.
+- [x] Also: Verhoeff round trip, a checksum-failing 12-digit number still blocked as an account number (EC-PII-04), full-width characters normalized (EC-IN-08), field detection, closest corpus scheme for not-covered questions, and a test that runs the whole guard set against the EV-4A gates.
+- [x] Labeled guard set `eval/guards_set.yaml` (all data made up): 25 PII positives, 25 PII negatives, 65 intent cases (27 advisory, 7 performance, 17 factual, 9 out of scope, 5 greeting) and 33 resolver cases.
 
 ### Deliverables
 
-- `app/guards/pii.py`, `app/guards/intent.py`, `app/retrieval/fields.py`, `app/retrieval/scheme_resolver.py` and their tests.
+- [x] `app/guards/pii.py`, `app/guards/intent.py`, `app/retrieval/fields.py`, `app/retrieval/scheme_resolver.py` and their tests (`tests/test_guards.py`).
+- [x] `eval/guards_set.yaml` and `eval/run_guards.py`.
 
 ### Exit criteria
 
-- All guard tests pass.
-- No PII test case reaches code beyond the guard.
+- [x] All guard tests pass (176/176 in the suite).
+- [x] The guard flags all 25 PII cases (recall 100%), and `detect_pii` returns only kinds, never the text. That nothing past the guard sees a flagged message is enforced where the pipeline is wired, so it is re-checked in Phase 4C.
 
 ---
 
