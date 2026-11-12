@@ -1,0 +1,245 @@
+# Phase 4C generation set (eval.md §9.2). Run with: python -m eval.run_generation
+#
+# Each question is given its gold passages directly (retrieval held fixed) and run through the
+# real LLM client, prompt, validator and retry with production settings.
+#   label: scheme_id:field in eval/fact_labels.yaml; its `accept` values decide correctness
+#   also_accept: extra accepted phrasings (e.g. for "no lock-in")
+#   expect_type: answer (default) or not_found
+#   gold: passages, in the same format as eval/retrieval_set.yaml
+# Cases without a label only check the response type, format and grounding.
+
+cases:
+  - q: "What is the expense ratio of HDFC Large Cap Fund?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:expense_ratio
+    gold: [fact:hdfc-large-cap:expense_ratio, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: "Is there an exit load on HDFC Large Cap Fund?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:exit_load
+    gold: [fact:hdfc-large-cap:exit_load, {doc: hdfc-large-cap-page, section: Key facts}, {doc: hdfc-large-cap-page, section: Exit Load}]
+  - q: "What is the minimum SIP amount for HDFC Large Cap Fund?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:min_sip
+    gold: [fact:hdfc-large-cap:min_sip, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: "What is the minimum application amount for HDFC Large Cap Fund?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:min_lumpsum
+    gold: [fact:hdfc-large-cap:min_lumpsum, {doc: hdfc-large-cap-page, section: Key facts}, {doc: hdfc-large-cap-kim, section: Minimum Application Amount}]
+  - q: "Does HDFC Large Cap Fund have a lock-in period?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:lock_in
+    also_accept: ["no lock", "not have a lock", "not applicable", "nil", "does not have"]
+    gold: [fact:hdfc-large-cap:lock_in, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: "How risky is HDFC Large Cap Fund as per its riskometer?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:riskometer
+    gold: [fact:hdfc-large-cap:riskometer, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: "What is the benchmark index of HDFC Large Cap Fund?"
+    scheme: hdfc-large-cap
+    label: hdfc-large-cap:benchmark
+    gold: [fact:hdfc-large-cap:benchmark, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: "What is the TER of HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:expense_ratio
+    gold: [fact:hdfc-mid-cap:expense_ratio, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: "What is the exit load for HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:exit_load
+    gold: [fact:hdfc-mid-cap:exit_load, {doc: hdfc-mid-cap-page, section: Key facts}, {doc: hdfc-mid-cap-page, section: Exit Load}]
+  - q: "How much is the smallest SIP in HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:min_sip
+    gold: [fact:hdfc-mid-cap:min_sip, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: "What is the minimum lump sum investment in HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:min_lumpsum
+    gold: [fact:hdfc-mid-cap:min_lumpsum, {doc: hdfc-mid-cap-page, section: Key facts}, {doc: hdfc-mid-cap-kim, section: Minimum Application Amount}]
+  - q: "What is the lock-in period of HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:lock_in
+    also_accept: ["no lock", "not have a lock", "not applicable", "nil", "does not have"]
+    gold: [fact:hdfc-mid-cap:lock_in, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: "What is the riskometer level of HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:riskometer
+    gold: [fact:hdfc-mid-cap:riskometer, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: "Which index is HDFC Mid Cap Fund benchmarked against?"
+    scheme: hdfc-mid-cap
+    label: hdfc-mid-cap:benchmark
+    gold: [fact:hdfc-mid-cap:benchmark, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: "What is the expense ratio of HDFC Small Cap Fund?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:expense_ratio
+    gold: [fact:hdfc-small-cap:expense_ratio, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: "Is there an exit load on HDFC Small Cap Fund?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:exit_load
+    gold: [fact:hdfc-small-cap:exit_load, {doc: hdfc-small-cap-page, section: Key facts}, {doc: hdfc-small-cap-page, section: Exit Load}]
+  - q: "What is the minimum SIP amount for HDFC Small Cap Fund?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:min_sip
+    gold: [fact:hdfc-small-cap:min_sip, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: "What is the minimum application amount for HDFC Small Cap Fund?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:min_lumpsum
+    gold: [fact:hdfc-small-cap:min_lumpsum, {doc: hdfc-small-cap-page, section: Key facts}, {doc: hdfc-small-cap-kim, section: Minimum Application Amount}]
+  - q: "Does HDFC Small Cap Fund have a lock-in period?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:lock_in
+    also_accept: ["no lock", "not have a lock", "not applicable", "nil", "does not have"]
+    gold: [fact:hdfc-small-cap:lock_in, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: "How risky is HDFC Small Cap Fund as per its riskometer?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:riskometer
+    gold: [fact:hdfc-small-cap:riskometer, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: "What is the benchmark index of HDFC Small Cap Fund?"
+    scheme: hdfc-small-cap
+    label: hdfc-small-cap:benchmark
+    gold: [fact:hdfc-small-cap:benchmark, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: "What is the TER of HDFC Multi Cap Fund?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:expense_ratio
+    gold: [fact:hdfc-multi-cap:expense_ratio, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: "What is the exit load for HDFC Multi Cap Fund?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:exit_load
+    gold: [fact:hdfc-multi-cap:exit_load, {doc: hdfc-multi-cap-page, section: Key facts}, {doc: hdfc-multi-cap-page, section: Exit Load}]
+  - q: "How much is the smallest SIP in HDFC Multi Cap Fund?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:min_sip
+    gold: [fact:hdfc-multi-cap:min_sip, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: "What is the minimum lump sum investment in HDFC Multi Cap Fund?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:min_lumpsum
+    gold: [fact:hdfc-multi-cap:min_lumpsum, {doc: hdfc-multi-cap-page, section: Key facts}, {doc: hdfc-multi-cap-kim, section: Minimum Application Amount}]
+  - q: "What is the lock-in period of HDFC Multi Cap Fund?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:lock_in
+    also_accept: ["no lock", "not have a lock", "not applicable", "nil", "does not have"]
+    gold: [fact:hdfc-multi-cap:lock_in, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: "What is the riskometer level of HDFC Multi Cap Fund?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:riskometer
+    gold: [fact:hdfc-multi-cap:riskometer, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: "Which index is HDFC Multi Cap Fund benchmarked against?"
+    scheme: hdfc-multi-cap
+    label: hdfc-multi-cap:benchmark
+    gold: [fact:hdfc-multi-cap:benchmark, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: "What is the expense ratio of HDFC ELSS Tax Saver Fund?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:expense_ratio
+    gold: [fact:hdfc-elss-tax-saver:expense_ratio, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: "Is there an exit load on HDFC ELSS Tax Saver Fund?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:exit_load
+    gold: [fact:hdfc-elss-tax-saver:exit_load, {doc: hdfc-elss-tax-saver-page, section: Key facts}, {doc: hdfc-elss-tax-saver-page, section: Exit Load}]
+  - q: "What is the minimum SIP amount for HDFC ELSS Tax Saver Fund?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:min_sip
+    gold: [fact:hdfc-elss-tax-saver:min_sip, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: "What is the minimum application amount for HDFC ELSS Tax Saver Fund?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:min_lumpsum
+    gold: [fact:hdfc-elss-tax-saver:min_lumpsum, {doc: hdfc-elss-tax-saver-page, section: Key facts}, {doc: hdfc-elss-tax-saver-kim, section: Minimum Application Amount}]
+  - q: "Does HDFC ELSS Tax Saver Fund have a lock-in period?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:lock_in
+    gold: [fact:hdfc-elss-tax-saver:lock_in, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: "How risky is HDFC ELSS Tax Saver Fund as per its riskometer?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:riskometer
+    gold: [fact:hdfc-elss-tax-saver:riskometer, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: "What is the benchmark index of HDFC ELSS Tax Saver Fund?"
+    scheme: hdfc-elss-tax-saver
+    label: hdfc-elss-tax-saver:benchmark
+    gold: [fact:hdfc-elss-tax-saver:benchmark, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: "What is the TER of HDFC Gold ETF Fund of Fund?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:expense_ratio
+    gold: [fact:hdfc-gold-etf-fof:expense_ratio, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: "What is the exit load for HDFC Gold ETF Fund of Fund?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:exit_load
+    gold: [fact:hdfc-gold-etf-fof:exit_load, {doc: hdfc-gold-etf-fof-page, section: Key facts}, {doc: hdfc-gold-etf-fof-page, section: Exit Load}]
+  - q: "How much is the smallest SIP in HDFC Gold ETF Fund of Fund?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:min_sip
+    gold: [fact:hdfc-gold-etf-fof:min_sip, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: "What is the minimum lump sum investment in HDFC Gold ETF Fund of Fund?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:min_lumpsum
+    gold: [fact:hdfc-gold-etf-fof:min_lumpsum, {doc: hdfc-gold-etf-fof-page, section: Key facts}, {doc: hdfc-gold-etf-fof-kim, section: Minimum Application Amount}]
+  - q: "What is the lock-in period of HDFC Gold ETF Fund of Fund?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:lock_in
+    also_accept: ["no lock", "not have a lock", "not applicable", "nil", "does not have"]
+    gold: [fact:hdfc-gold-etf-fof:lock_in, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: "What is the riskometer level of HDFC Gold ETF Fund of Fund?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:riskometer
+    gold: [fact:hdfc-gold-etf-fof:riskometer, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: "Which index is HDFC Gold ETF Fund of Fund benchmarked against?"
+    scheme: hdfc-gold-etf-fof
+    label: hdfc-gold-etf-fof:benchmark
+    gold: [fact:hdfc-gold-etf-fof:benchmark, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: "What is the expense ratio of HDFC Silver ETF Fund of Fund?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:expense_ratio
+    gold: [fact:hdfc-silver-etf-fof:expense_ratio, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: "Is there an exit load on HDFC Silver ETF Fund of Fund?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:exit_load
+    gold: [fact:hdfc-silver-etf-fof:exit_load, {doc: hdfc-silver-etf-fof-page, section: Key facts}, {doc: hdfc-silver-etf-fof-page, section: Exit Load}]
+  - q: "What is the minimum SIP amount for HDFC Silver ETF Fund of Fund?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:min_sip
+    gold: [fact:hdfc-silver-etf-fof:min_sip, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: "What is the minimum application amount for HDFC Silver ETF Fund of Fund?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:min_lumpsum
+    gold: [fact:hdfc-silver-etf-fof:min_lumpsum, {doc: hdfc-silver-etf-fof-page, section: Key facts}, {doc: hdfc-silver-etf-fof-kim, section: Minimum Application Amount}]
+  - q: "Does HDFC Silver ETF Fund of Fund have a lock-in period?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:lock_in
+    also_accept: ["no lock", "not have a lock", "not applicable", "nil", "does not have"]
+    gold: [fact:hdfc-silver-etf-fof:lock_in, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: "How risky is HDFC Silver ETF Fund of Fund as per its riskometer?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:riskometer
+    gold: [fact:hdfc-silver-etf-fof:riskometer, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: "What is the benchmark index of HDFC Silver ETF Fund of Fund?"
+    scheme: hdfc-silver-etf-fof
+    label: hdfc-silver-etf-fof:benchmark
+    gold: [fact:hdfc-silver-etf-fof:benchmark, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: "Is there any charge to get the capital gain statement?"
+    scheme: null
+    also_accept: ["free"]
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: any charge}]
+  - q: "How can I request an account statement by email?"
+    scheme: null
+    also_accept: ["email"]
+    gold: [{doc: hdfc-request-statement, section: Request statement}]
+  - q: "How do I redeem HDFC ELSS Tax Saver units?"
+    scheme: hdfc-elss-tax-saver
+    gold: [{doc: hdfc-elss-tax-saver-page, section: How to Redeem}]
+  - q: "What does HDFC Gold ETF Fund of Fund invest in?"
+    scheme: hdfc-gold-etf-fof
+    also_accept: ["gold etf", "gold exchange traded"]
+    gold: [{doc: hdfc-gold-etf-fof-page, section: What is HDFC Gold Fund}]
+  - q: "What is HDFC Silver ETF FoF?"
+    scheme: hdfc-silver-etf-fof
+    also_accept: ["silver etf", "silver exchange traded"]
+    gold: [{doc: hdfc-silver-etf-fof-page, section: What is HDFC Silver ETF FoF}]
+  - q: "Who manages HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    gold: [{doc: hdfc-mid-cap-page, section: Fund Managers}]
+  - q: "Does HDFC Small Cap Fund only invest in small caps?"
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-page, section: only invest in small caps}]
+  - q: "What is the investment strategy of HDFC Small Cap Fund?"
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-page, section: Investment Strategy}]
+  - q: "What is the dividend history of HDFC Mid Cap Fund?"
+    scheme: hdfc-mid-cap
+    expect_type: not_found
+    gold: [{doc: hdfc-mid-cap-page, section: Fund Managers}]

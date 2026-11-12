@@ -1,0 +1,90 @@
+# Reply templates (architecture §6.8). Every text is at most 3 sentences (EC-FMT-05).
+#
+# Placeholders: {scheme} = the covered scheme's short name ("HDFC Mid Cap Fund"),
+#               {schemes} = the 7 short names, comma-separated.
+# Links are chosen by the composer, never written here:
+#   refusal, pii_blocked                  → SEBI Investor Education
+#   out_of_scope, not_found (no scheme)   → AMFI Investor Corner
+#   not covered (Regular / IDCW / ETF)    → the covered scheme's official page
+#   performance_redirect                  → the scheme's Fund Facts PDF (Factsheets page for FoFs)
+#   nav                                   → the scheme's official page (EC-PERF-05)
+#   clarify, greeting                     → no link, no footer
+
+refusal: >-
+  I can only share factual information about these schemes and can't advise on whether to
+  invest or which fund to choose. For help deciding, you can read the investor education
+  resource below or speak to a SEBI-registered investment adviser.
+
+refusal_mixed: >-
+  I can't give advice or opinions, so I can't answer that question as asked. If you'd like a
+  fact, such as a scheme's expense ratio or exit load, please ask for it on its own.
+
+performance_redirect: >-
+  I can't share or calculate returns. The latest official performance figures for {scheme}
+  are in its factsheet.
+
+performance_redirect_general: >-
+  I can't share or calculate returns. The latest official performance figures for each scheme
+  are in HDFC Mutual Fund's factsheets.
+
+nav: >-
+  I don't share NAV figures, because they change every business day. The latest NAV of
+  {scheme} is on its official page.
+
+nav_general: >-
+  I don't share NAV figures, because they change every business day. Each scheme's official
+  page shows its latest NAV.
+
+pii_blocked: >-
+  Please don't share personal details like PAN, Aadhaar, account numbers, OTPs, phone numbers
+  or email addresses. I don't need them to answer questions about mutual fund schemes, and your
+  message was not processed.
+
+out_of_scope: >-
+  I answer factual questions about 7 HDFC Mutual Fund schemes, such as expense ratio, exit
+  load, minimum SIP, lock-in, riskometer and benchmark. I can't help with that question.
+
+not_covered_other_amc: >-
+  I only cover these 7 HDFC Mutual Fund schemes: {schemes}. I can't answer questions about
+  other fund houses' schemes.
+
+not_covered_other_hdfc_scheme: >-
+  That HDFC Mutual Fund scheme isn't one I cover. I only cover these 7 schemes: {schemes}.
+
+not_covered_regular_plan: >-
+  I only cover the Direct Growth plan of {scheme}, not the Regular plan. Facts like the expense
+  ratio differ between the two plans.
+
+not_covered_regular_plan_general: >-
+  I only cover the Direct Growth plans of 7 HDFC Mutual Fund schemes, not Regular plans. Facts
+  like the expense ratio differ between the two plans.
+
+not_covered_idcw: >-
+  I only cover the Growth option of {scheme}, not the IDCW option.
+
+not_covered_idcw_general: >-
+  I only cover the Growth option of 7 HDFC Mutual Fund schemes, not the IDCW option.
+
+not_covered_etf: >-
+  I cover {scheme}, not the exchange-traded fund it invests in. Facts like the expense ratio
+  differ between the two.
+
+not_found: >-
+  I couldn't find a verified answer to that in the official documents I use. You can check the
+  official page of {scheme} for details.
+
+not_found_general: >-
+  I couldn't find a verified answer to that in the official documents I use. The investor
+  resource below may help.
+
+clarify_needs_scheme: >-
+  Which scheme do you mean? I cover {schemes}.
+
+clarify_several: >-
+  Please ask about one scheme at a time, so each answer can cite its own official source. I
+  cover {schemes}.
+
+greeting: >-
+  Hi! I answer factual questions about 7 HDFC Mutual Fund schemes, such as expense ratio, exit
+  load, minimum SIP, lock-in, riskometer and benchmark. For example, ask: "What is the expense
+  ratio of HDFC Mid Cap Fund?"

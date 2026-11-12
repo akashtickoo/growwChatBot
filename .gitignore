@@ -1,0 +1,21 @@
+# Secrets
+.env
+
+# Generated data (page content, indexes, reports)
+data/raw/
+data/processed/
+data/index/
+data/reports/
+data/registry.sqlite
+data/*.lock
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Streamlit secrets (use .streamlit/secrets.toml.example as the template)
+.streamlit/secrets.toml

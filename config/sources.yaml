@@ -1,0 +1,111 @@
+# Source manifest (architecture §4.2): official HDFC Mutual Fund pages only (D1).
+# Groww pages are never listed here. tests/test_manifest.py enforces this.
+#
+# Scheme PDFs (SID, KIM, Fund Facts) are not listed by URL: their links carry dates and version
+# IDs that change. Each scheme page lists them under linked_documents, and they are found on the
+# page by the start of their link text.
+#
+# fetch: auto   -> fetched by ingestion
+# fetch: manual -> saved by hand into data/raw/<id>/ (the URL is still used for the citation)
+# index: false  -> fetched and registered (for links and checks) but not searched. Used for:
+#   SID         long legal document that would dilute retrieval; KIM and the page cover the facts
+#   FUND_FACTS  mostly performance data; used only as the link for performance questions
+#   factsheets  index page; used only as the performance link for the two FoFs
+
+allowed_domains:
+  - www.hdfcfund.com      # HDFC MF website
+  - files.hdfcfund.com    # HDFC MF document store (SID, KIM, Fund Facts PDFs)
+
+documents:
+  # --- Scheme pages (Direct plan) ---
+  - id: hdfc-large-cap-page
+    scheme_id: hdfc-large-cap
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-large-cap-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: &equity_docs
+      - {doc_type: SID, link_text_prefix: "SID - ", index: false}
+      - {doc_type: KIM, link_text_prefix: "KIM - "}
+      - {doc_type: FUND_FACTS, link_text_prefix: "Fund Facts - ", index: false}
+
+  - id: hdfc-mid-cap-page
+    scheme_id: hdfc-mid-cap
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-mid-cap-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: *equity_docs
+
+  - id: hdfc-small-cap-page
+    scheme_id: hdfc-small-cap
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-small-cap-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: *equity_docs
+
+  - id: hdfc-multi-cap-page
+    scheme_id: hdfc-multi-cap
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-multi-cap-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: *equity_docs
+
+  - id: hdfc-elss-tax-saver-page
+    scheme_id: hdfc-elss-tax-saver
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-elss-tax-saver-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: *equity_docs
+
+  # The two FoF pages have no "Fund Facts" PDF; performance questions link the factsheet index.
+  - id: hdfc-gold-etf-fof-page
+    scheme_id: hdfc-gold-etf-fof
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-gold-etf-fund-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: &fof_docs
+      - {doc_type: SID, link_text_prefix: "SID - ", index: false}
+      - {doc_type: KIM, link_text_prefix: "KIM - "}
+
+  - id: hdfc-silver-etf-fof-page
+    scheme_id: hdfc-silver-etf-fof
+    doc_type: SCHEME_PAGE
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-silver-etf-fund-fund/direct
+    format: html
+    refresh: weekly
+    linked_documents: *fof_docs
+
+  # --- General pages (apply to all schemes) ---
+  - id: hdfc-request-statement
+    scheme_id: null
+    doc_type: SERVICE_PAGE
+    url: https://www.hdfcfund.com/services/additional-info/request-statement
+    format: html
+    refresh: monthly
+
+  - id: hdfc-consolidated-account-statement
+    scheme_id: null
+    doc_type: SERVICE_PAGE
+    url: https://www.hdfcfund.com/services/consolidated-account-statement
+    format: html
+    refresh: monthly
+
+  - id: hdfc-capital-gain-statement-guide
+    scheme_id: null
+    doc_type: SERVICE_PAGE
+    url: https://www.hdfcfund.com/learn/blog/how-get-capital-gain-statement-mutual-fund-schemes-india
+    format: html
+    refresh: monthly
+
+  - id: hdfc-factsheets
+    scheme_id: null
+    doc_type: FACTSHEET_INDEX
+    url: https://www.hdfcfund.com/mutual-funds/factsheets
+    format: html
+    refresh: monthly
+    index: false

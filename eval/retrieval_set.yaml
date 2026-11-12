@@ -1,0 +1,329 @@
+# Phase 4B retrieval set (eval.md §8). Run with: python -m eval.run_retrieval
+#
+# Each answerable case names its scope (`scheme`, or null for the statement pages) and the gold
+# passages that answer it. A case passes Recall@5 when any top-5 chunk matches any gold entry:
+#   fact:<scheme>:<field>          the fact card (exact chunk id)
+#   {doc: <doc_id>, section: <s>}  a chunk of that document whose section contains <s>
+#   {doc: <doc_id>, text: <t>}     a chunk of that document whose text contains <t>
+# Matches ignore case. Gold entries name sections and short key phrases only, never fact values,
+# so the set doesn't go stale when a value changes. Fields come from detect_fields(question),
+# as in the pipeline.
+#
+# Off-topic cases have no gold; they should fall below MIN_SIMILARITY (EV-4B-05).
+
+answerable:
+  # --- HDFC Large Cap ---------------------------------------------------------------------
+  - q: What is the expense ratio of HDFC Large Cap Fund?
+    scheme: hdfc-large-cap
+    gold: [fact:hdfc-large-cap:expense_ratio, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: HDFC Large Cap exit load
+    scheme: hdfc-large-cap
+    gold: [fact:hdfc-large-cap:exit_load, {doc: hdfc-large-cap-page, section: Exit Load}]
+  - q: What's the minimum SIP amount for HDFC Large Cap?
+    scheme: hdfc-large-cap
+    gold: [fact:hdfc-large-cap:min_sip, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: Which index is HDFC Large Cap Fund benchmarked against?
+    scheme: hdfc-large-cap
+    gold: [fact:hdfc-large-cap:benchmark, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: How risky is HDFC Large Cap Fund as per the riskometer?
+    scheme: hdfc-large-cap
+    gold: [fact:hdfc-large-cap:riskometer, {doc: hdfc-large-cap-page, section: Key facts}]
+  - q: Who are the fund managers of HDFC Large Cap Fund?
+    scheme: hdfc-large-cap
+    gold: [{doc: hdfc-large-cap-page, section: Fund Managers}, {doc: hdfc-large-cap-kim, text: fund manager}]
+  - q: What is the investment objective of HDFC Large Cap?
+    scheme: hdfc-large-cap
+    gold: [{doc: hdfc-large-cap-kim, text: investment objective}]
+  - q: How do I invest in HDFC Large Cap Fund?
+    scheme: hdfc-large-cap
+    gold: [{doc: hdfc-large-cap-page, section: How to Invest}]
+  - q: What plans and options does HDFC Large Cap Fund offer?
+    scheme: hdfc-large-cap
+    gold: [{doc: hdfc-large-cap-kim, text: plans and options}]
+  - q: Minimum lump sum investment in HDFC Large Cap
+    scheme: hdfc-large-cap
+    gold: [fact:hdfc-large-cap:min_lumpsum, {doc: hdfc-large-cap-kim, section: Minimum Application Amount}]
+
+  # --- HDFC Mid Cap -----------------------------------------------------------------------
+  - q: What is the expense ratio of HDFC Mid Cap Fund?
+    scheme: hdfc-mid-cap
+    gold: [fact:hdfc-mid-cap:expense_ratio, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: Is there an exit load on HDFC Mid Cap if I redeem early?
+    scheme: hdfc-mid-cap
+    gold: [fact:hdfc-mid-cap:exit_load, {doc: hdfc-mid-cap-page, section: Exit Load}]
+  - q: HDFC Mid Cap riskometer
+    scheme: hdfc-mid-cap
+    gold: [fact:hdfc-mid-cap:riskometer, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: What is the benchmark of HDFC Mid Cap Fund?
+    scheme: hdfc-mid-cap
+    gold: [fact:hdfc-mid-cap:benchmark, {doc: hdfc-mid-cap-page, section: Key facts}]
+  - q: Can I start a SIP in HDFC Mid Cap, and what is the minimum?
+    scheme: hdfc-mid-cap
+    gold: [fact:hdfc-mid-cap:min_sip, {doc: hdfc-mid-cap-page, section: SIP and Lump Sum}]
+  - q: Who manages HDFC Mid Cap Fund?
+    scheme: hdfc-mid-cap
+    gold: [{doc: hdfc-mid-cap-page, section: Fund Managers}, {doc: hdfc-mid-cap-kim, text: fund manager}]
+  - q: What is the asset allocation pattern of HDFC Mid Cap Fund?
+    scheme: hdfc-mid-cap
+    gold: [{doc: hdfc-mid-cap-kim, text: asset allocation pattern}]
+  - q: What does HDFC Mid Cap Fund aim to achieve?
+    scheme: hdfc-mid-cap
+    gold: [{doc: hdfc-mid-cap-kim, text: investment objective}]
+  - q: Does HDFC Mid Cap have a lock-in period?
+    scheme: hdfc-mid-cap
+    gold: [fact:hdfc-mid-cap:lock_in]
+  - q: What is the cut-off time for applicable NAV in HDFC Mid Cap?
+    scheme: hdfc-mid-cap
+    gold: [{doc: hdfc-mid-cap-kim, text: cut-off}, {doc: hdfc-mid-cap-kim, text: applicable nav}]
+  - q: Is stamp duty charged on purchases of HDFC Mid Cap units?
+    scheme: hdfc-mid-cap
+    gold: [{doc: hdfc-mid-cap-kim, text: stamp duty}]
+
+  # --- HDFC Small Cap ---------------------------------------------------------------------
+  - q: What is the TER of HDFC Small Cap?
+    scheme: hdfc-small-cap
+    gold: [fact:hdfc-small-cap:expense_ratio, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: exit load for hdfc small cap fund
+    scheme: hdfc-small-cap
+    gold: [fact:hdfc-small-cap:exit_load, {doc: hdfc-small-cap-page, section: Exit Load}]
+  - q: What is the minimum investment in HDFC Small Cap Fund?
+    scheme: hdfc-small-cap
+    gold:
+      - fact:hdfc-small-cap:min_lumpsum
+      - {doc: hdfc-small-cap-page, section: minimum investment}
+      - {doc: hdfc-small-cap-kim, section: Minimum Application Amount}
+  - q: Smallest SIP I can do in HDFC Small Cap?
+    scheme: hdfc-small-cap
+    gold: [fact:hdfc-small-cap:min_sip, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: What benchmark does HDFC Small Cap Fund track?
+    scheme: hdfc-small-cap
+    gold: [fact:hdfc-small-cap:benchmark, {doc: hdfc-small-cap-page, section: benchmark}]
+  - q: Risk level of HDFC Small Cap Fund
+    scheme: hdfc-small-cap
+    gold: [fact:hdfc-small-cap:riskometer, {doc: hdfc-small-cap-page, section: Key facts}]
+  - q: Who is the fund manager of HDFC Small Cap?
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-page, section: Fund Managers}, {doc: hdfc-small-cap-kim, text: fund manager}]
+  - q: Does HDFC Small Cap Fund only invest in small caps?
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-page, section: only invest in small caps}, {doc: hdfc-small-cap-kim, text: asset allocation pattern}]
+  - q: What is the investment strategy of HDFC Small Cap Fund?
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-page, section: Investment Strategy}]
+  - q: What is HDFC Small Cap Fund?
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-page, section: What is HDFC Small Cap Fund}]
+  - q: Can I hold HDFC Small Cap units in demat form?
+    scheme: hdfc-small-cap
+    gold: [{doc: hdfc-small-cap-kim, text: demat}]
+
+  # --- HDFC Multi Cap ---------------------------------------------------------------------
+  - q: What is the expense ratio of HDFC Multi Cap Fund?
+    scheme: hdfc-multi-cap
+    gold: [fact:hdfc-multi-cap:expense_ratio, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: HDFC Multi Cap exit load details
+    scheme: hdfc-multi-cap
+    gold: [fact:hdfc-multi-cap:exit_load, {doc: hdfc-multi-cap-page, section: Exit Load}]
+  - q: Minimum SIP installment for HDFC Multi Cap
+    scheme: hdfc-multi-cap
+    gold: [fact:hdfc-multi-cap:min_sip, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: What is the riskometer category of HDFC Multi Cap Fund?
+    scheme: hdfc-multi-cap
+    gold: [fact:hdfc-multi-cap:riskometer, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: Benchmark index of HDFC Multi Cap
+    scheme: hdfc-multi-cap
+    gold: [fact:hdfc-multi-cap:benchmark, {doc: hdfc-multi-cap-page, section: Key facts}]
+  - q: Who manages the HDFC Multi Cap Fund?
+    scheme: hdfc-multi-cap
+    gold: [{doc: hdfc-multi-cap-page, section: Fund Managers}, {doc: hdfc-multi-cap-kim, text: fund manager}]
+  - q: How is HDFC Multi Cap Fund's money split between large, mid and small caps?
+    scheme: hdfc-multi-cap
+    gold: [{doc: hdfc-multi-cap-kim, text: asset allocation pattern}]
+  - q: What is the investment objective of HDFC Multi Cap Fund?
+    scheme: hdfc-multi-cap
+    gold: [{doc: hdfc-multi-cap-kim, text: investment objective}]
+  - q: What is the minimum application amount for HDFC Multi Cap?
+    scheme: hdfc-multi-cap
+    gold: [fact:hdfc-multi-cap:min_lumpsum, {doc: hdfc-multi-cap-kim, section: Minimum Application Amount}]
+  - q: What is the record date for IDCW in HDFC Multi Cap?
+    scheme: hdfc-multi-cap
+    gold: [{doc: hdfc-multi-cap-kim, text: record date}]
+
+  # --- HDFC ELSS Tax Saver ----------------------------------------------------------------
+  - q: What is the lock-in period of HDFC ELSS Tax Saver?
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:lock_in, {doc: hdfc-elss-tax-saver-kim, text: lock}]
+  - q: How long are my units locked in HDFC ELSS?
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:lock_in, {doc: hdfc-elss-tax-saver-kim, text: lock}]
+  - q: Expense ratio of HDFC ELSS Tax Saver
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:expense_ratio, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: Is there an exit load on HDFC ELSS Tax Saver?
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:exit_load, {doc: hdfc-elss-tax-saver-page, section: Exit Load}]
+  - q: Minimum SIP for HDFC ELSS Tax Saver Fund
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:min_sip, {doc: hdfc-elss-tax-saver-page, section: SIP and Lump Sum}, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: What is the benchmark for HDFC ELSS Tax Saver?
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:benchmark, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: How do I redeem HDFC ELSS Tax Saver units?
+    scheme: hdfc-elss-tax-saver
+    gold: [{doc: hdfc-elss-tax-saver-page, section: How to Redeem}]
+  - q: How can I invest in HDFC ELSS Tax Saver?
+    scheme: hdfc-elss-tax-saver
+    gold: [{doc: hdfc-elss-tax-saver-page, section: How to Invest}]
+  - q: Who is the fund manager of HDFC ELSS Tax Saver?
+    scheme: hdfc-elss-tax-saver
+    gold: [{doc: hdfc-elss-tax-saver-page, section: Fund Managers}, {doc: hdfc-elss-tax-saver-kim, text: fund manager}]
+  - q: ELSS riskometer
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:riskometer, {doc: hdfc-elss-tax-saver-page, section: Key facts}]
+  - q: Minimum lumpsum amount to invest in HDFC ELSS
+    scheme: hdfc-elss-tax-saver
+    gold: [fact:hdfc-elss-tax-saver:min_lumpsum, {doc: hdfc-elss-tax-saver-kim, section: Minimum Application Amount}]
+
+  # --- HDFC Gold ETF Fund of Fund ---------------------------------------------------------
+  - q: What is the expense ratio of HDFC Gold ETF Fund of Fund?
+    scheme: hdfc-gold-etf-fof
+    gold: [fact:hdfc-gold-etf-fof:expense_ratio, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: HDFC Gold ETF FoF minimum SIP
+    scheme: hdfc-gold-etf-fof
+    gold: [fact:hdfc-gold-etf-fof:min_sip, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: Exit load of HDFC Gold Fund of Fund
+    scheme: hdfc-gold-etf-fof
+    gold: [fact:hdfc-gold-etf-fof:exit_load, {doc: hdfc-gold-etf-fof-page, section: Exit Load}]
+  - q: What is the benchmark of the HDFC gold FoF?
+    scheme: hdfc-gold-etf-fof
+    gold: [fact:hdfc-gold-etf-fof:benchmark, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: How risky is the HDFC Gold ETF Fund of Fund?
+    scheme: hdfc-gold-etf-fof
+    gold: [fact:hdfc-gold-etf-fof:riskometer, {doc: hdfc-gold-etf-fof-page, section: Key facts}]
+  - q: What does HDFC Gold ETF Fund of Fund invest in?
+    scheme: hdfc-gold-etf-fof
+    gold: [{doc: hdfc-gold-etf-fof-page, section: What is HDFC Gold Fund}, {doc: hdfc-gold-etf-fof-kim, text: investment objective}]
+  - q: Who manages HDFC Gold ETF FoF?
+    scheme: hdfc-gold-etf-fof
+    gold: [{doc: hdfc-gold-etf-fof-page, section: Fund Managers}, {doc: hdfc-gold-etf-fof-kim, text: fund manager}]
+  - q: Minimum purchase amount for HDFC Gold ETF FoF
+    scheme: hdfc-gold-etf-fof
+    gold: [fact:hdfc-gold-etf-fof:min_lumpsum, {doc: hdfc-gold-etf-fof-kim, section: Minimum Application Amount}]
+  - q: Asset allocation of HDFC Gold ETF Fund of Fund
+    scheme: hdfc-gold-etf-fof
+    gold: [{doc: hdfc-gold-etf-fof-kim, text: asset allocation pattern}]
+  - q: What plans and options are available in HDFC Gold ETF FoF?
+    scheme: hdfc-gold-etf-fof
+    gold: [{doc: hdfc-gold-etf-fof-kim, text: plans and options}]
+
+  # --- HDFC Silver ETF Fund of Fund -------------------------------------------------------
+  - q: What is the expense ratio of HDFC Silver ETF FoF?
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:expense_ratio, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: Exit load on HDFC Silver ETF Fund of Fund
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:exit_load, {doc: hdfc-silver-etf-fof-page, section: Exit Load}]
+  - q: HDFC silver fund minimum SIP amount
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:min_sip, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: What is the riskometer of HDFC Silver ETF FoF?
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:riskometer, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: Benchmark of HDFC Silver ETF Fund of Fund
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:benchmark, {doc: hdfc-silver-etf-fof-page, section: Key facts}]
+  - q: What is HDFC Silver ETF FoF?
+    scheme: hdfc-silver-etf-fof
+    gold: [{doc: hdfc-silver-etf-fof-page, section: What is HDFC Silver ETF FoF}]
+  - q: Who is the fund manager for HDFC Silver ETF FoF?
+    scheme: hdfc-silver-etf-fof
+    gold: [{doc: hdfc-silver-etf-fof-page, section: Fund Managers}, {doc: hdfc-silver-etf-fof-kim, text: fund manager}]
+  - q: What is the investment objective of HDFC Silver ETF Fund of Fund?
+    scheme: hdfc-silver-etf-fof
+    gold: [{doc: hdfc-silver-etf-fof-kim, text: investment objective}]
+  - q: Does HDFC Silver ETF FoF have a lock in?
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:lock_in]
+  - q: Minimum one-time investment in HDFC Silver ETF FoF
+    scheme: hdfc-silver-etf-fof
+    gold: [fact:hdfc-silver-etf-fof:min_lumpsum, {doc: hdfc-silver-etf-fof-kim, section: Minimum Application Amount}]
+
+  # --- General (statement pages) ----------------------------------------------------------
+  - q: How do I download a capital gains statement?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: capital gain statement}]
+  - q: What is a capital gain statement?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: What is a Capital Gain Statement}]
+  - q: Is there any charge to get the capital gain statement?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: any charge}]
+  - q: Can I use CAS for filing taxes?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: CAS for tax filing}]
+  - q: What period does the capital gains statement cover?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: What period}]
+  - q: Does the capital gain statement include unrealised gains?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: unrealized gains}]
+  - q: What is a consolidated account statement?
+    scheme: null
+    gold: [{doc: hdfc-consolidated-account-statement, text: consolidated account statement}, {doc: hdfc-capital-gain-statement-guide, section: CAS}]
+  - q: How do I get a CAS for all my mutual funds?
+    scheme: null
+    gold: [{doc: hdfc-consolidated-account-statement, text: consolidated account statement}, {doc: hdfc-capital-gain-statement-guide, section: consolidated statement}]
+  - q: How can I request an account statement from HDFC Mutual Fund?
+    scheme: null
+    gold: [{doc: hdfc-request-statement, section: Request statement}]
+  - q: I invested through several platforms, how do I get one capital gains statement?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: multiple platforms}, {doc: hdfc-capital-gain-statement-guide, section: consolidated statement}]
+  - q: Can I get the capital gain statement from the registrar?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: Registrar}]
+  - q: When should I download my capital gain statement?
+    scheme: null
+    gold: [{doc: hdfc-capital-gain-statement-guide, section: When should I download}]
+
+off_topic:
+  - q: "What is the weather in Mumbai today?"
+    scheme: null
+  - q: "Tell me a joke"
+    scheme: null
+  - q: "Who is the prime minister of India?"
+    scheme: null
+  - q: "Give me a recipe for pizza"
+    scheme: null
+  - q: "Who won the cricket world cup in 2023?"
+    scheme: null
+  - q: "What is the capital of France?"
+    scheme: null
+  - q: "How do I fix the wifi on my laptop?"
+    scheme: null
+  - q: "Translate good morning into Hindi"
+    scheme: null
+  - q: "Recommend a good movie to watch tonight"
+    scheme: null
+  - q: "How many legs does a spider have?"
+    scheme: null
+  - q: "Write a poem about the ocean"
+    scheme: null
+  - q: "What time does the train to Pune leave?"
+    scheme: null
+  - q: "Explain quantum entanglement simply"
+    scheme: null
+  - q: "How do I bake sourdough bread?"
+    scheme: null
+  - q: "Who painted the Mona Lisa?"
+    scheme: null
+  - q: "Best exercises for back pain"
+    scheme: null
+  - q: "Which colour is the HDFC Mid Cap Fund logo?"
+    scheme: hdfc-mid-cap
+  - q: "Does HDFC Small Cap Fund sponsor any football team?"
+    scheme: hdfc-small-cap
+  - q: "Is there a cafeteria in the HDFC Large Cap office?"
+    scheme: hdfc-large-cap
+  - q: "What music plays in the HDFC Gold ETF FoF advert?"
+    scheme: hdfc-gold-etf-fof

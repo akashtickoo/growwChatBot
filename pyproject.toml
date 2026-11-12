@@ -1,0 +1,57 @@
+[project]
+name = "groww-chatbot"
+version = "0.1.0"
+description = "Facts-only FAQ assistant for 7 HDFC Mutual Fund schemes: a small RAG app with a Streamlit UI."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "groq",
+    "sentence-transformers",
+    "torch",
+    "chromadb",
+    "rank-bm25",
+    "rapidfuzz",
+    "httpx>=0.27",
+    "beautifulsoup4",
+    "pymupdf",
+    "pdfplumber",
+    "pysbd",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.4",
+    "slowapi",
+    "pyyaml>=6.0",
+    "tzdata",
+    "streamlit>=1.67.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+# Linux (Streamlit Community Cloud, Docker) gets the CPU-only torch build; PyPI's Linux wheels
+# pull in several GB of CUDA libraries the app never uses. Windows and macOS wheels on PyPI are
+# CPU-only already.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Code sketches in the design docs are illustrations, not project code.
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

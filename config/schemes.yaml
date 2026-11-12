@@ -1,0 +1,95 @@
+# Scheme registry: the 7 schemes the assistant covers (architecture §4.1).
+# Only the Direct Growth plan is covered (D11).
+#
+# groww_ref:     the Groww page from the problem statement. Identifier only: never fetched,
+#                indexed or cited (D1).
+# source_doc_id: the official HDFC MF scheme page in config/sources.yaml.
+#
+# Every alias must contain "hdfc", so another AMC's "small cap" fund can never match through a
+# generic alias (EC-SCH-07). Category words without "hdfc" ("ELSS", "large cap") are handled by
+# the resolver, not here.
+
+amc: HDFC Mutual Fund
+plan: Direct Growth
+
+schemes:
+  - id: hdfc-large-cap
+    name: HDFC Large Cap Fund – Direct Growth
+    category: Large-cap equity
+    groww_ref: https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth
+    source_doc_id: hdfc-large-cap-page
+    aliases:
+      - hdfc large cap
+      - hdfc largecap
+      - hdfc large cap fund
+      - hdfc top 100        # former name "HDFC Top 100 Fund" (confirmed in SID and KIM)
+
+  - id: hdfc-mid-cap
+    name: HDFC Mid Cap Fund – Direct Growth
+    category: Mid-cap equity
+    groww_ref: https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth
+    source_doc_id: hdfc-mid-cap-page
+    aliases:
+      - hdfc mid cap
+      - hdfc midcap
+      - hdfc mid-cap
+      - hdfc mid cap fund
+      - hdfc mid-cap opportunities   # former name "HDFC Mid-Cap Opportunities Fund" (SID, KIM)
+
+  - id: hdfc-small-cap
+    name: HDFC Small Cap Fund – Direct Growth
+    category: Small-cap equity
+    groww_ref: https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth
+    source_doc_id: hdfc-small-cap-page
+    aliases:
+      - hdfc small cap
+      - hdfc smallcap
+      - hdfc small-cap
+      - hdfc small cap fund
+
+  - id: hdfc-multi-cap
+    name: HDFC Multi Cap Fund – Direct Growth
+    category: Multi-cap equity
+    groww_ref: https://groww.in/mutual-funds/hdfc-multi-cap-fund-direct-growth
+    source_doc_id: hdfc-multi-cap-page
+    aliases:
+      - hdfc multi cap
+      - hdfc multicap
+      - hdfc multi-cap
+      - hdfc multi cap fund
+
+  - id: hdfc-elss-tax-saver
+    name: HDFC ELSS Tax Saver Fund – Direct Plan Growth
+    category: ELSS
+    groww_ref: https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth
+    source_doc_id: hdfc-elss-tax-saver-page
+    aliases:
+      - hdfc elss
+      - hdfc elss tax saver
+      - hdfc elss - tax saver       # wording on the HDFC MF page
+      - hdfc tax saver
+      - hdfc taxsaver       # common short name; the SID and KIM list no former name
+
+  - id: hdfc-gold-etf-fof
+    name: HDFC Gold ETF Fund of Fund – Direct Plan Growth
+    category: Fund of Funds (Gold)
+    groww_ref: https://groww.in/mutual-funds/hdfc-gold-etf-fund-of-fund-direct-plan-growth
+    source_doc_id: hdfc-gold-etf-fof-page
+    aliases:
+      - hdfc gold etf fund of fund
+      - hdfc gold etf fof
+      - hdfc gold fof
+      - hdfc gold fund of fund
+      - hdfc gold fund
+
+  - id: hdfc-silver-etf-fof
+    name: HDFC Silver ETF Fund of Fund – Direct Growth
+    category: Fund of Funds (Silver)
+    groww_ref: https://groww.in/mutual-funds/hdfc-silver-etf-fof-direct-growth
+    source_doc_id: hdfc-silver-etf-fof-page
+    aliases:
+      - hdfc silver etf fund of fund
+      - hdfc silver etf fof
+      - hdfc silver fof
+      - hdfc silver fund of fund
+      - hdfc silver fund

@@ -1,0 +1,18 @@
+# Fixed investor-education links used in reply templates (architecture §2.1, decided 2026-11-11).
+# They are only linked, never fetched into the index or searched.
+# ingestion/check_sources.py checks that each one still opens.
+
+allowed_domains:
+  - investor.sebi.gov.in
+  - www.amfiindia.com
+
+links:
+  sebi_investor:
+    title: SEBI Investor Education
+    url: https://investor.sebi.gov.in/
+    used_in: [refusal, pii_blocked]
+
+  amfi_investor:
+    title: AMFI Investor Corner
+    url: https://www.amfiindia.com/investor
+    used_in: [out_of_scope, not_found_no_scheme]
