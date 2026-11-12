@@ -126,6 +126,6 @@ Do not collect, store or process:
 ## Open Questions
 
 - **Source policy vs. corpus links:** The scheme list points to `groww.in` pages, but the source constraint excludes aggregator websites. Decide whether Groww pages are used only to identify the schemes, with answers and citations drawn from HDFC MF (scheme information documents, KIM, factsheets), AMFI and SEBI, or whether Groww counts as an allowed source because it is the reference product.
-  **Resolved:** the 7 Groww scheme pages are the corpus and the citation for every answer ([architecture.md](architecture.md) D1).
+  **Resolved (11 Nov 2026):** Groww pages only identify the schemes. Answers and citations come from official HDFC MF sources (scheme pages, SID, KIM, Fund Facts, statement pages), with AMFI and SEBI as education links ([architecture.md](architecture.md) D1).
 - **"Last updated" date:** Define whether this is the crawl/ingestion date of the corpus or the publication date of the cited document.
   **Resolved:** the date the cited page was last fetched and checked, shown as the India date. A value's own as-of date is stated in the answer when the page shows one ([architecture.md](architecture.md) D2).

@@ -19,7 +19,7 @@ Companion documents:
 | **Accuracy over intelligence** | The LLM only rephrases retrieved text. It never adds facts. Every number in an answer must appear in the cited source. |
 | **Deterministic where possible** | Refusals, PII blocking, performance redirects, "not covered" replies and footers come from code and templates, not from the model. |
 | **The citation is never generated** | The model picks a source ID from the retrieved set. The server maps that ID to a URL from the source registry. The model cannot invent a link. |
-| **Fixed corpus** | Only the 7 Groww scheme pages listed in the problem statement are fetched, indexed and cited (D1). |
+| **Official sources only** | Only official HDFC Mutual Fund pages and documents are fetched, indexed and cited. AMFI and SEBI appear only as fixed education links. Groww pages only identify the schemes (D1). |
 | **Stateless and private** | No accounts, no stored chat history, no raw query logging. Messages that contain PII never reach the LLM. |
 | **Lightweight** | One Python service, a local vector index, SQLite and a static web page. No external database or queue. |
 
@@ -31,28 +31,28 @@ These decisions also answer the open questions in the problem statement.
 
 | # | Decision | Choice | Rationale |
 |---|---|---|---|
-| D1 | **Corpus** | The corpus is exactly the 7 Groww scheme pages in the problem statement. They are ingested, and each answer cites its scheme's Groww page. No AMC, AMFI, SEBI or other pages are ingested. | Project decision, answering the problem statement's first open question. One page per scheme makes "exactly one citation" straightforward. **Trade-off:** the problem statement's constraints name AMC, AMFI and SEBI as the only sources and exclude aggregators; this is recorded as a limitation (§18). |
-| D2 | **"Last updated from sources" date** | The date the cited page was last fetched and checked (`fetched_at`), shown as the India date (Asia/Kolkata). When the page shows an as-of date next to a value (e.g. expense ratio), the answer states it too. | Pages may not date every value. The footer then always means "when we last checked this page". Times are stored in UTC, so the footer must convert them, or it can be a day off (EC-CIT-03). |
+| D1 | **Corpus** | Official HDFC MF sources only: each scheme's Direct-plan page on `www.hdfcfund.com`, the SID, KIM and Fund Facts PDFs it links to on `files.hdfcfund.com`, three statement pages and the factsheet index. The Groww URLs in the problem statement only identify the schemes (`groww_ref`); they are never fetched, indexed or cited. AMFI and SEBI are used only as fixed education links. | Decided 11 Nov 2026. Meets the problem statement's rule (AMC, AMFI, SEBI only; no aggregators). Groww's terms also forbid entering its content into a database or redistributing it. |
+| D2 | **"Last updated from sources" date** | The date the cited document was last fetched and checked (`fetched_at`), shown as the India date (Asia/Kolkata). When the document shows an as-of date next to a value (e.g. AUM), the answer states it too. | Scheme pages don't date most values (TER, exit load, riskometer). The footer then always means "when we last checked this source". Times are stored in UTC, so the footer must convert them, or it can be a day off (EC-CIT-03). |
 | D3 | **Conversation model** | Single-turn and stateless. Each question is answered on its own. The page shows history in the browser only. | Nothing to store means nothing to leak. Follow-ups like "what about its lock-in?" get a clarification (EC-SCH-11). |
 | D4 | **One scheme per answer** | Questions about several schemes get a clarification asking for one scheme at a time. | Exactly one citation per answer is a hard requirement. |
 | D5 | **Mixed factual + advisory questions** | Treated as advisory and refused. The refusal invites the user to ask the factual part on its own. | Conservative. Avoids partial answers that read as advice. |
 | D6 | **Language and framework** | Python 3.12, FastAPI. | Good ecosystem for HTML parsing, embeddings and RAG. |
 | D7 | **LLM** | Groq, model `openai/gpt-oss-120b`, through the official `groq` Python SDK. `reasoning_effort` is `low` for answers and `medium` for offline fact extraction. The model ID is set by environment variable. | On Groq this model supports strict JSON-schema output (constrained decoding), which the answer step relies on. Fast inference keeps answer latency low. |
 | D8 | **Retrieval** | Hybrid search (BM25 + dense embeddings) with metadata filtering by scheme, over a local index. | Questions contain exact terms ("exit load", "riskometer") and scheme names, where keyword search is strong. Dense search covers paraphrases. |
-| D9 | **Embeddings** | Local `BAAI/bge-small-en-v1.5` via `sentence-transformers`. | Free, fast on CPU and enough for a corpus of 7 pages. No second API key. |
+| D9 | **Embeddings** | Local `BAAI/bge-small-en-v1.5` via `sentence-transformers`. | Free, fast on CPU and enough for a small corpus (11 pages and about 20 PDFs). No second API key. |
 | D10 | **Structured "fact cards"** | During ingestion, key facts per scheme are extracted into reviewed records and indexed as high-priority chunks. A card is withdrawn when its page changes, until it is reviewed again. | The most common questions get answers from a clean, reviewed record. Withdrawal stops an outdated value from being served (EC-RET-04). |
 | D11 | **Plans covered** | Only the Direct Growth plan of each scheme (and the FoF, not the underlying ETF). Questions about Regular plans, IDCW options or the plain Gold/Silver ETF get a "not covered" reply. | Expense ratios and other facts differ between plans and products (EC-SCH-05, EC-SCH-09). |
 
-### 2.1 Behavior Decisions (proposed, confirm in Phase 1)
+### 2.1 Behavior Decisions (decided 11 Nov 2026)
 
-These come from [edge-case.md](edge-case.md) §18 and the plan's Phase 1 "Effects to record". The design below uses the proposed default. Each must be confirmed or changed in Phase 1.
+These come from [edge-case.md](edge-case.md) §18 and the plan's Phase 1 "Effects to record". All were confirmed in Phase 1 as written below.
 
-| Topic | Proposed default | Case |
+| Topic | Decision | Case |
 |---|---|---|
-| Performance and returns questions | No figures. Link the scheme's Groww page. | EC-PERF-01 |
-| Statement / capital gains questions | `not_found` if the coverage matrix shows the pages don't explain them. | EC-SCH-02 |
-| Education links in refusals and PII replies | Keep one or two fixed AMFI/SEBI links in the templates. They are not ingested or searched. The problem statement requires an educational link in refusals, but this adds URLs outside the 7 pages. | Phase 1 |
-| `not_found` with no scheme | Use the same fixed education link. | EC-CIT-05 |
+| Performance and returns questions | No figures. Link the official factsheet: the scheme's "Fund Facts" PDF, or HDFC MF's Factsheets page for the two FoFs (they have no Fund Facts PDF). | EC-PERF-01 |
+| Statement / capital gains questions | Answer from HDFC MF's statement pages (request statement, consolidated account statement, capital gain statement guide). | EC-SCH-02 |
+| Education links in refusals and PII replies | Fixed links in `config/education_links.yaml`: SEBI Investor Education (`https://investor.sebi.gov.in/`) for refusals and PII replies, AMFI Investor Corner (`https://www.amfiindia.com/investor`) for scope replies. They are linked only, never ingested or searched. | Phase 1 |
+| `not_found` with no scheme | Link AMFI Investor Corner. | EC-CIT-05 |
 | NAV | No figure (the corpus refreshes weekly). Link the scheme's page. | EC-PERF-05 |
 | Fund size / AUM | Answer only when the page shows an as-of date next to it. | EC-PERF-06 |
 | Holdings | Unsupported: `not_found` with the page link. | EC-PERF-09 |
@@ -72,8 +72,8 @@ These come from [edge-case.md](edge-case.md) §18 and the plan's Phase 1 "Effect
 ```mermaid
 flowchart LR
     subgraph Offline["Offline: Ingestion (scheduled)"]
-        A["sources.yaml (7 Groww URLs) + schemes.yaml"] --> B["Fetcher (groww.in only, sanity check)"]
-        B --> C["HTML parser (strips peer-fund sections)"]
+        A["sources.yaml (HDFC MF pages) + schemes.yaml"] --> B["Fetcher (HDFC MF hosts only, finds linked PDFs, sanity check)"]
+        B --> C["HTML + PDF parsers (strip returns and suitability sections)"]
         C --> D["Normalizer + Chunker"]
         D --> E["Fact-card extractor + human review"]
         D --> F["Embedder"]
@@ -100,7 +100,7 @@ flowchart LR
 
 **Two halves:**
 
-1. **Ingestion (offline).** Builds a versioned index from the 7 Groww pages. Runs on a schedule or by hand.
+1. **Ingestion (offline).** Builds a versioned index from the official HDFC MF sources. Runs on a schedule or by hand.
 2. **Query serving (online).** A FastAPI service that runs each question through guards, retrieval, one LLM call, validation and formatting.
 
 ---
@@ -113,28 +113,24 @@ flowchart LR
 amc: HDFC Mutual Fund
 plan: Direct Growth          # only plan covered (D11)
 schemes:
-  - id: hdfc-large-cap
-    name: HDFC Large Cap Fund – Direct Growth
-    category: Large-cap equity
-    source_doc_id: groww-hdfc-large-cap
-    aliases: ["hdfc large cap", "hdfc largecap", "hdfc top 100"]   # verify former names
-  - id: hdfc-elss-tax-saver
-    name: HDFC ELSS Tax Saver Fund – Direct Plan Growth
-    category: ELSS
-    source_doc_id: groww-hdfc-elss-tax-saver
-    aliases: ["hdfc elss", "hdfc tax saver", "hdfc taxsaver"]
-  # ... mid-cap, small-cap, multi-cap, gold-etf-fof, silver-etf-fof
+  - id: hdfc-mid-cap
+    name: HDFC Mid Cap Fund – Direct Growth
+    category: Mid-cap equity
+    groww_ref: https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth   # identifier only (D1)
+    source_doc_id: hdfc-mid-cap-page
+    aliases: ["hdfc mid cap", "hdfc midcap", "hdfc mid-cap opportunities"]
+  # ... 7 schemes in total
 ```
 
-| Scheme ID | Scheme | Category | Source page |
+| Scheme ID | Scheme | Category | Official scheme page |
 |---|---|---|---|
-| `hdfc-large-cap` | HDFC Large Cap Fund – Direct Growth | Large-cap equity | https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth |
-| `hdfc-mid-cap` | HDFC Mid Cap Fund – Direct Growth | Mid-cap equity | https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth |
-| `hdfc-small-cap` | HDFC Small Cap Fund – Direct Growth | Small-cap equity | https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth |
-| `hdfc-multi-cap` | HDFC Multi Cap Fund – Direct Growth | Multi-cap equity | https://groww.in/mutual-funds/hdfc-multi-cap-fund-direct-growth |
-| `hdfc-elss-tax-saver` | HDFC ELSS Tax Saver Fund – Direct Plan Growth | ELSS | https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth |
-| `hdfc-gold-etf-fof` | HDFC Gold ETF Fund of Fund – Direct Plan Growth | Fund of Funds (Gold) | https://groww.in/mutual-funds/hdfc-gold-etf-fund-of-fund-direct-plan-growth |
-| `hdfc-silver-etf-fof` | HDFC Silver ETF Fund of Fund – Direct Growth | Fund of Funds (Silver) | https://groww.in/mutual-funds/hdfc-silver-etf-fof-direct-growth |
+| `hdfc-large-cap` | HDFC Large Cap Fund – Direct Growth | Large-cap equity | https://www.hdfcfund.com/explore/mutual-funds/hdfc-large-cap-fund/direct |
+| `hdfc-mid-cap` | HDFC Mid Cap Fund – Direct Growth | Mid-cap equity | https://www.hdfcfund.com/explore/mutual-funds/hdfc-mid-cap-fund/direct |
+| `hdfc-small-cap` | HDFC Small Cap Fund – Direct Growth | Small-cap equity | https://www.hdfcfund.com/explore/mutual-funds/hdfc-small-cap-fund/direct |
+| `hdfc-multi-cap` | HDFC Multi Cap Fund – Direct Growth | Multi-cap equity | https://www.hdfcfund.com/explore/mutual-funds/hdfc-multi-cap-fund/direct |
+| `hdfc-elss-tax-saver` | HDFC ELSS Tax Saver Fund – Direct Plan Growth | ELSS | https://www.hdfcfund.com/explore/mutual-funds/hdfc-elss-tax-saver-fund/direct |
+| `hdfc-gold-etf-fof` | HDFC Gold ETF Fund of Fund – Direct Plan Growth | Fund of Funds (Gold) | https://www.hdfcfund.com/explore/mutual-funds/hdfc-gold-etf-fund-fund/direct |
+| `hdfc-silver-etf-fof` | HDFC Silver ETF Fund of Fund – Direct Growth | Fund of Funds (Silver) | https://www.hdfcfund.com/explore/mutual-funds/hdfc-silver-etf-fund-fund/direct |
 
 Aliases must always include "hdfc", so another AMC's "small cap" fund can't match through a generic alias (EC-SCH-07).
 
@@ -142,42 +138,62 @@ Aliases must always include "hdfc", so another AMC's "small cap" fund can't matc
 
 ```yaml
 allowed_domains:
-  - groww.in
+  - www.hdfcfund.com      # HDFC MF website
+  - files.hdfcfund.com    # HDFC MF document store (SID, KIM, Fund Facts PDFs)
 
 documents:
-  - id: groww-hdfc-mid-cap
+  - id: hdfc-mid-cap-page
     scheme_id: hdfc-mid-cap
     doc_type: SCHEME_PAGE
-    url: https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth
+    url: https://www.hdfcfund.com/explore/mutual-funds/hdfc-mid-cap-fund/direct
     format: html
     refresh: weekly
-    fetch: auto            # or "manual" if scripted fetching is blocked or not permitted
-  # ... one entry per scheme, 7 in total
+    linked_documents:
+      - {doc_type: SID, link_text_prefix: "SID - "}
+      - {doc_type: KIM, link_text_prefix: "KIM - "}
+      - {doc_type: FUND_FACTS, link_text_prefix: "Fund Facts - "}   # equity schemes only
+  # ... 7 scheme pages, then:
+  - id: hdfc-capital-gain-statement-guide
+    scheme_id: null
+    doc_type: SERVICE_PAGE
+    url: https://www.hdfcfund.com/learn/blog/how-get-capital-gain-statement-mutual-fund-schemes-india
+    format: html
+    refresh: monthly
+  # ... request-statement and consolidated-account-statement pages, and the factsheets index
 ```
 
-- A manifest test fails the build if the file contains any URL other than the 7.
-- The fetcher rejects any host other than `groww.in`, including after redirects.
-- Before the first fetch, check that `groww.in/robots.txt` and Groww's terms of use allow it. If not, every page uses `fetch: manual`: saved by hand into `data/raw/<doc_id>/`, with the Groww URL still used for citations.
+- **Not everything fetched is searched.** `index: false` documents are fetched, checked and registered (for links, dates and alias checks) but not indexed: SIDs (long legal text that would dilute retrieval; the KIM and scheme page cover the facts), Fund Facts PDFs (mostly performance data; used only as the performance link) and the Factsheets index.
+- **Linked PDFs are found, not listed.** Their URLs carry dates and version IDs (e.g. `KIM - HDFC Mid Cap Fund dated November 21, 2025_1.pdf?VersionId=…`) that change when HDFC MF publishes a new version. Each fetch finds them on the scheme page by the start of their link text, which is the same on all 7 pages. Their IDs follow the scheme: `hdfc-mid-cap-kim`, `hdfc-mid-cap-fund-facts`.
+- Manifest tests fail if any source is not on an HDFC MF host, if a scheme page is not the Direct plan, or if a scheme page doesn't link its SID and KIM.
+- The fetcher rejects any host not in `allowed_domains`, including after redirects. Hosts match exactly.
+- robots.txt on `www.hdfcfund.com` allows these paths (only `smartlink` and `quicklink` URLs are disallowed). Checked 11 Nov 2026.
+- If scripted fetching is ever blocked, a document can use `fetch: manual`: saved by hand into `data/raw/<doc_id>/`, with the official URL still used for citations.
+
+**Education links** (`config/education_links.yaml`) are separate: SEBI and AMFI pages used only as links in reply templates. They have their own allowlist and are checked by `ingestion.check_sources`, but never fetched into the index.
 
 ### 4.3 Where each answer comes from
 
-All facts come from the scheme's own Groww page. The exact page section for each field is recorded in `docs/coverage-matrix.md` during Phase 1.
+Recorded field by field in [coverage-matrix.md](coverage-matrix.md) (Phase 1). All 49 scheme × field cells have an official source.
 
-| Question type | Source | Behavior |
-|---|---|---|
-| Expense ratio | Scheme page | Answer, with the page's as-of date if shown |
-| Exit load | Scheme page | Answer, all slabs copied exactly |
-| Minimum SIP / lumpsum | Scheme page | Answer |
-| Lock-in | ELSS page (and others only if stated) | "No lock-in" only when the page says so (EC-FLD-01) |
-| Riskometer | Scheme page | Answer with the exact label |
-| Benchmark index | Scheme page | Answer |
-| Statements / capital gains report | Probably not on the pages | `not_found` unless the coverage matrix shows otherwise (§2.1) |
-| Returns, NAV, ratings, holdings, suitability | — | Not answered (§2.1) |
+| Question type | Primary source | Backup | Behavior |
+|---|---|---|---|
+| Expense ratio (TER) | Scheme page "TER" box | KIM / SID | Answer. The page gives no as-of date, so the footer date is the only date. |
+| Exit load | Scheme page "Exit Load" section | KIM | Answer, all slabs copied exactly |
+| Minimum SIP | Scheme page "Min SIP" box | KIM | Answer |
+| Minimum lumpsum | KIM "Minimum Application Amount" table (all 7); also some scheme-page FAQs | — | Answer |
+| Lock-in | Scheme page "Lock in" box ("3 years" for ELSS, "NA" for the rest) | SID | "NA" is answered as "the scheme page lists no lock-in period" (EC-FLD-01) |
+| Riskometer | Scheme page "Riskometer" box (the scheme's, not the benchmark's) | Product Labelling section | Answer with the exact label |
+| Benchmark index | Scheme page "Benchmark" box | SID | Answer |
+| Statements / capital gains report | HDFC MF statement pages | — | Answer (§2.1) |
+| Performance / returns | — | — | No figures. Link Fund Facts or the Factsheets page (§2.1) |
+| NAV, ratings, holdings, suitability | — | — | Not answered (§2.1) |
 
-**Page content risks:**
+**Content risks** (from the Phase 1 page review):
 
-- Groww pages show "similar funds" and peer comparisons with other funds' expense ratios and returns. These sections are stripped at parse time (EC-RET-06).
-- Some values may load through JavaScript and be missing from the raw HTML. Phase 1 checks this. If so, ingestion reads the data embedded in the page or uses a headless browser (Playwright).
+- Every scheme page shows a "Returns since inception" figure, NAV and benchmark performance tables, "Ideal for" text and a "Product Suitability" statement. These are stripped at parse time (EC-PERF-07, EC-INT-06).
+- The page also shows a **benchmark** riskometer. Extraction must take the scheme's riskometer.
+- The KIM's minimum-amount table is multi-column and comes out jumbled as plain text. It must be parsed as a table.
+- The scheme pages are server-rendered: all facts are in the raw HTML, so no headless browser is needed.
 
 ---
 
@@ -188,10 +204,11 @@ Run with `python -m ingestion.run` (all pages) or `--only <doc_id>`.
 ```mermaid
 flowchart TD
     M["Load sources.yaml (manifest test)"] --> LK["Take lock file"]
-    LK --> F1["Fetch (groww.in only, timeout, retries) or read manual file"]
-    F1 --> SC{"Sanity check passes?"}
+    LK --> F1["Fetch page (HDFC MF hosts only, timeout, retries) or read manual file"]
+    F1 --> LD["Find linked SID / KIM / Fund Facts PDFs, fetch them"]
+    LD --> SC{"Sanity check passes?"}
     SC -- No --> KF["Record failure, keep last good version"]
-    SC -- Yes --> PR["Parse HTML, strip peer-fund sections"]
+    SC -- Yes --> PR["Parse HTML and PDFs, strip returns and suitability sections"]
     PR --> H1{"Hash of extracted text changed?"}
     H1 -- No --> SK["Update fetched_at only"]
     H1 -- Yes --> NO["Normalize text"]
@@ -208,52 +225,61 @@ flowchart TD
 ### 5.1 Fetch
 
 - `httpx` with a 20 s timeout, 3 retries with backoff, a plain generic User-Agent and HTTPS only.
-- Allowlist checked before the request and again on the final URL after redirects.
-- **Sanity check** on every response: the scheme name is present, the text is over a minimum length, and expected sections exist. A captcha, "access denied" or empty page counts as a failed fetch even with HTTP 200 (EC-ING-01).
-- Raw bytes saved to `data/raw/<doc_id>/<fetched_at>.html` (gitignored).
+- Allowlist checked before the request and on every redirect hop.
+- **Linked PDFs:** after fetching a scheme page, find each `linked_documents` entry by the start of its link text (`ingestion/linked_docs.py`) and fetch that PDF. A missing link is a failure for that document only.
+- **Sanity check** on every response: expected content type, the scheme name is present, the text is over a minimum length, and expected sections exist. A captcha, "access denied" or empty page counts as a failed fetch even with HTTP 200 (EC-ING-01).
+- Raw bytes saved to `data/raw/<doc_id>/<fetched_at>.<html|pdf>` (gitignored).
 - If a fetch fails, the last good version stays in the index and the failure is reported. The build does not abort.
 - A lock file stops two ingestion runs from overlapping (EC-ING-08).
 
 ### 5.2 Parse
 
-- `trafilatura`, with `BeautifulSoup` as fallback. Keeps headings and tables.
-- Removes navigation, footers, scripts, and "similar funds" / peer-comparison sections, so the text holds only this scheme's data.
-- If Phase 1 finds values missing from the raw HTML, read the page's embedded data or render it with a headless browser.
-- **Hash:** a SHA-256 hash of the extracted text, not the raw bytes. Groww pages change on every load (daily NAV, timestamps, tokens), so a raw-byte hash would mark every page as changed (EC-ING-03).
+| Format | Library | Notes |
+|---|---|---|
+| HTML | `BeautifulSoup`, walking the page as an ordered list of headings and text | `trafilatura` picks the wrong block on some scheme pages (Small Cap, Multi Cap), so all HTML is read this way. |
+| KIM | `pdfplumber` for page text and tables | Table areas are cut out of the page text so tables aren't repeated in jumbled form. Each table becomes "Header: value; Header: value" sentences, captioned with the label to its left (e.g. "11. Minimum Application Amount / Number of Units"). |
+| SID, Fund Facts | `pymupdf` | Text-layer check (scanned PDFs are rejected) and full-text scan; not chunked. |
+
+- **Scheme pages are parsed allowlist-first.** Kept: the labeled fact boxes (rendered as a "Key facts" section), "What is HDFC …?", "Investment Strategy", Fund Managers, Exit Load, and FAQs whose question isn't about risk, suitability, comparisons, horizon or returns. Everything else is dropped: returns, NAV and benchmark performance, "Ideal for", "Why invest", "Who can consider", "How to start investing", holdings and "Product Suitability". NAV is never kept.
+- **KIMs:** the suitability/riskometer table and the "Performance of the Scheme" block with its return tables are dropped.
+- A final line filter removes any remaining line mentioning "since inception", "value of investment", "ideal for", "suitable for", "past performance" or CAGR.
+- Layout quirks handled: Exit Load bullet points written as `h3` tags (Multi Cap), fund-manager headings without "Mr." (Multi Cap, ELSS, FoFs), the benchmark's shortened name followed by the full one.
+- **Hash:** a SHA-256 hash of the extracted text, not the raw bytes. Pages carry changing values (AUM, dates, tokens) and PDFs get new version IDs, so a raw-byte hash would mark everything as changed (EC-ING-03).
 
 ### 5.3 Normalize and chunk
 
 - Normalize Unicode (NFKC), collapse whitespace, standardize "₹" / "Rs." / "INR".
 - **Section-aware chunking**: split on headings first, then into ~400-token windows with ~60-token overlap. Tables are never split.
 - Each chunk gets a **context header** to help retrieval:
-  `[HDFC Mid Cap Fund – Direct Growth | Scheme page | Exit load]`
-- Each page covers one scheme, so its chunks take `scheme_id` from the manifest entry.
+  `[HDFC Mid Cap Fund – Direct Growth | KIM | Minimum Application Amount]`
+- Scheme pages and their linked PDFs take `scheme_id` from the manifest entry. Statement pages have `scheme_id: null` and are searched for general questions.
 - Chunk metadata: `chunk_id`, `doc_id`, `scheme_id`, `doc_type`, `section`, `source_url`, `doc_as_of`.
 
 ### 5.4 Fact cards
 
-For each scheme, one LLM extraction call per field over that scheme's chunks (`reasoning_effort` `medium`), with strict JSON-schema output:
+`python -m ingestion.fact_cards` makes one Groq call per scheme × field (`reasoning_effort` `medium`). The candidates are the scheme page's "Key facts" (and "Exit Load") chunks plus the top 4 BM25 matches from the scheme's page and KIM. Each field names a preferred source: the scheme page, or the KIM minimum-amount table for minimum lumpsum. Scheme-page values are current; KIM figures can be older, such as the previous financial year's actual expenses. The model returns strict JSON:
 
 ```json
 {
   "status": "found",
-  "field": "exit_load",
-  "value": "1% if redeemed within 1 year",
-  "verbatim_quote": "...exact text from the page...",
-  "source_doc_id": "groww-hdfc-mid-cap",
-  "doc_as_of": null
+  "value": "0.74%",
+  "verbatim_quote": "Total expense ratio (TER): 0.74%",
+  "source_id": "S1",
+  "conflicting": false
 }
 ```
 
-`status` is `found` or `not_found`.
+The card's `source_doc_id`, `source_chunk_id`, `source_content_hash` and `doc_as_of` come from the source `S1` points to, never from model text.
 
 Rules:
 
-1. `verbatim_quote` must appear in the page text after normalization. Otherwise the card is rejected.
-2. If more than one candidate value appears (e.g. an old and a new expense ratio), the card is flagged for review, not accepted automatically.
-3. Changes from the previous build go into `data/reports/fact_diff_<date>.md`.
-4. Each card stores the page's content hash. When the hash changes, the page's cards are withdrawn from the index until new ones are reviewed.
-5. Only **reviewed** cards are indexed, as chunks with `doc_type: FACT_CARD`. Their `source_url` is the scheme's Groww page.
+1. **Quote check.** `verbatim_quote` must appear in the cited source after normalization, and every number in `value` must appear in the quote. A failing card gets one retry with the problems listed, then is stored with status `rejected`.
+2. **Conflicts.** `conflicting: true` (the sources gave different values) is shown to the reviewer.
+3. **Diff report.** `data/reports/fact_diff_<time>.md` lists changed or new values versus the previous extraction, label matches and review status.
+4. **Re-extraction.** Only when the scheme's sources change (combined hash of its page and KIM), or with `--force`.
+5. **Review.** New cards are `pending`. `python -m ingestion.review_facts` shows the value, quote, source link, Phase 1 label and flags, and records approve or reject.
+6. **Indexing.** Only approved `found` cards are indexed, as `FACT_CARD` chunks whose `source_url` is the document the value came from. `python -m ingestion.run --index-only` rebuilds without re-fetching.
+7. **Withdrawal.** An approved card whose source document's hash has changed is left out of the index until re-reviewed (EC-RET-04). Exception: if re-extraction gives the same value and quote from the same document, the approval carries over, so an unrelated change such as monthly AUM doesn't force re-reviewing every card.
 
 Fields: `expense_ratio`, `exit_load`, `min_sip`, `min_lumpsum`, `lock_in`, `riskometer`, `benchmark`.
 
@@ -261,13 +287,15 @@ Fields: `expense_ratio`, `exit_load`, `min_sip`, `min_lumpsum`, `lock_in`, `risk
 
 - Embeddings: `BAAI/bge-small-en-v1.5` (384 dimensions, normalized).
 - Dense index: ChromaDB in persistent local mode, with metadata filtering on `scheme_id` and `doc_type`.
-- Keyword index: `rank_bm25` over the same chunks, saved next to the vector store.
+- Keyword index: `rank_bm25`, built at load time from the version's `chunks.jsonl` (fast for a few hundred chunks, and avoids loading pickled objects).
+- Each document's chunks are kept in `data/processed/<doc_id>.json`, so an unchanged document isn't re-parsed or re-chunked. Every build embeds all chunks from that store.
+- A build is skipped when the document hashes match the current version's `build.json`.
 - Each build writes to `data/index/v<timestamp>/`. A `current` pointer file is switched only after the build succeeds (temp file, then `os.replace`), so the running server never reads a half-built index.
 
 ### 5.6 Refresh schedule
 
-- Fetch all 7 pages weekly. Unchanged pages are skipped by the hash check.
-- Values such as expense ratio and riskometer usually change monthly, so expect fact-card reviews about once a month.
+- Fetch the 7 scheme pages weekly, with their linked PDFs. Statement pages and the factsheet index monthly. Unchanged sources are skipped by the hash check.
+- Fund Facts PDFs are monthly editions. Expense ratio and riskometer can change monthly. SIDs and KIMs change rarely (current ones are dated 21 Nov 2025). Expect fact-card reviews about once a month.
 - Scheduling can be a GitHub Actions cron job or a cron entry on the host. Start with manual runs.
 
 ---
@@ -308,7 +336,7 @@ sequenceDiagram
     API->>RT: hybrid search (filtered by scheme)
     alt nothing relevant above threshold
         RT->>RC: not_found template
-        RC-->>UI: not found + scheme's Groww page
+        RC-->>UI: not found + scheme's official page
     end
     API->>LLM: system prompt + sources + question
     LLM-->>API: { status, answer, source_id }
@@ -343,7 +371,7 @@ Keyword and regex rules decide the obvious cases without the LLM. When several m
 | Intent | Example triggers | Action |
 |---|---|---|
 | `advisory` | "should I invest", "is it good", "better", "best fund", "recommend", "worth", "safe to invest", "which fund", "suggest", "my portfolio", ratings, "suitable for" | Refusal template |
-| `performance` | "returns" next to performance words ("1 year", "%", "CAGR", "gave"), "XIRR", "how much will I earn", "growth of", NAV | Redirect template + scheme's Groww page |
+| `performance` | "returns" next to performance words ("1 year", "%", "CAGR", "gave"), "XIRR", "how much will I earn", "growth of", NAV | Redirect template + the scheme's official factsheet (§2.1) |
 | `out_of_scope` | Another AMC's scheme, stocks, crypto, tax filing help, Groww app or account help, URLs to fetch, feedback, abuse | Scope template |
 | `greeting` | The **whole** message is a greeting: "hi", "hello", "thanks", "bye" | Short welcome text with example questions, no link |
 | `factual` | Everything else | Continue the pipeline |
@@ -377,7 +405,7 @@ Outcomes:
 | Not covered | `out_of_scope` "not covered" reply. For Regular/IDCW/ETF, it names the covered Direct Growth or FoF scheme and links its page. |
 | Several schemes | `clarify`, one scheme at a time (D4) |
 | No scheme, scheme-specific field ("What is the exit load?") | `clarify` listing the 7 schemes |
-| No scheme, general question ("How do I download a statement?") | `not_found` with the fixed fallback link (§2.1). The corpus has no general documents. |
+| No scheme, general question ("How do I download a statement?") | Retrieve from the statement pages only (`scheme_id: null`) |
 
 ### 6.5 Stage 4: Hybrid retriever (`app/retrieval/hybrid.py`)
 
@@ -475,7 +503,7 @@ Every LLM answer must pass all checks:
 | Grounding | Every number, percentage and date in the answer appears in the cited chunk text **or** its `doc_as_of` (EC-FLD-12), after normalizing "₹1,000" / "Rs 1000" etc. |
 | Policy | No strongly advisory phrases ("you should invest", "we recommend", "good choice", "better than") and no return figures ("returns of x%", "CAGR", "XIRR"). Kept narrow to avoid rejecting legitimate text (EC-FMT-04). |
 
-On failure: one retry, with the failed checks listed in a follow-up message. A second failure gives the `not_found` template, which still links the scheme's Groww page.
+On failure: one retry, with the failed checks listed in a follow-up message. A second failure gives the `not_found` template, which still links the scheme's official page.
 
 ### 6.8 Stage 7: Response composer (`app/responses/`)
 
@@ -486,7 +514,7 @@ The composer builds the final response. The citation URL and dates always come f
 ```text
 The exit load for HDFC Mid Cap Fund – Direct Growth is 1% if redeemed within 1 year.
 
-Source: https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth
+Source: https://www.hdfcfund.com/explore/mutual-funds/hdfc-mid-cap-fund/direct
 Last updated from sources: 10 Nov 2026
 ```
 
@@ -495,11 +523,11 @@ Last updated from sources: 10 Nov 2026
 | Type | Text (sketch) | Link |
 |---|---|---|
 | `refusal` | "I can only share factual information about these schemes and can't advise on whether to invest or which fund to choose. For help deciding, you can read the investor education resource below or speak to a SEBI-registered investment adviser." | Fixed education link (§2.1) |
-| `performance_redirect` | "I can't share or calculate returns. The latest performance figures for this scheme are on its Groww page." | Scheme's Groww page |
+| `performance_redirect` | "I can't share or calculate returns. The latest official performance figures for this scheme are in its factsheet." | Scheme's Fund Facts PDF, or the Factsheets page for the two FoFs |
 | `pii_blocked` | "Please don't share personal details like PAN, Aadhaar, account numbers, OTPs, phone numbers or email addresses. I don't need them to answer questions about mutual fund schemes." | Fixed education link (§2.1) |
 | `out_of_scope` (general) | "I answer factual questions about 7 HDFC Mutual Fund schemes, such as expense ratio, exit load, minimum SIP, lock-in, riskometer and benchmark." | Fixed education link (§2.1) |
-| `out_of_scope` (not covered) | "I only cover the Direct Growth plan of HDFC Mid Cap Fund, not the Regular plan." (wording varies by case) | The covered scheme's Groww page, or the fixed link for other AMCs and schemes |
-| `not_found` | "I couldn't find a verified answer to that on the scheme page I use. You can check the page for details." | Scheme's Groww page, or the fixed link when no scheme |
+| `out_of_scope` (not covered) | "I only cover the Direct Growth plan of HDFC Mid Cap Fund, not the Regular plan." (wording varies by case) | The covered scheme's official page, or AMFI Investor Corner for other AMCs and schemes |
+| `not_found` | "I couldn't find a verified answer to that in the official documents I use. You can check the scheme's official page for details." | Scheme's official page, or AMFI Investor Corner when no scheme |
 | `clarify` | "Which scheme do you mean? I cover: …" | None (contains no facts) |
 | `greeting` | Welcome text and example questions | None |
 
@@ -528,8 +556,8 @@ Response:
   "type": "answer",
   "text": "HDFC ELSS Tax Saver Fund has a lock-in period of 3 years.",
   "citation": {
-    "url": "https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth",
-    "title": "HDFC ELSS Tax Saver Fund – Direct Plan Growth (Groww)"
+    "url": "https://www.hdfcfund.com/explore/mutual-funds/hdfc-elss-tax-saver-fund/direct",
+    "title": "HDFC ELSS Tax Saver Fund – Direct Plan Growth (HDFC Mutual Fund)"
   },
   "last_updated": "2026-11-10",
   "request_id": "b3f1..."
@@ -565,11 +593,11 @@ A single static page (`app/static/index.html` + `app.js` + `styles.css`) served 
 ├──────────────────────────────────────────────────────────┤
 │  👋 Hi! Ask me factual questions about 7 HDFC Mutual      │
 │  Fund schemes: expense ratio, exit load, minimum SIP,    │
-│  lock-in, riskometer and benchmark.                      │
+│  lock-in, riskometer, benchmark, and statements.         │
 │                                                          │
 │  [What is the expense ratio of HDFC Mid Cap Fund?]       │
 │  [What is the lock-in period of HDFC ELSS Tax Saver?]    │
-│  [What is the minimum SIP for HDFC Small Cap Fund?]      │
+│  [How do I get my capital gains statement?]              │
 │                                                          │
 │  ── answer bubbles: text, "Source" link, footer ──       │
 ├──────────────────────────────────────────────────────────┤
@@ -578,7 +606,7 @@ A single static page (`app/static/index.html` + `app.js` + `styles.css`) served 
 └──────────────────────────────────────────────────────────┘
 ```
 
-The example questions are proposals, confirmed in Phase 1 against the coverage matrix.
+The example questions were chosen in Phase 1 so each has an official source: the Mid Cap TER (0.74%) and ELSS lock-in (3 years) from the scheme pages, and the capital gain statement guide (see [coverage-matrix.md](coverage-matrix.md)).
 
 - Example chips send their question when clicked. Ignored while a request is pending.
 - Send is disabled while waiting, so a double click sends one request.
@@ -597,11 +625,12 @@ Pydantic sketches (`app/models.py`):
 
 ```python
 class SourceDocument(BaseModel):
-    doc_id: str                    # e.g. "groww-hdfc-mid-cap"
-    scheme_id: str
-    doc_type: Literal["SCHEME_PAGE"]
+    doc_id: str                    # e.g. "hdfc-mid-cap-page", "hdfc-mid-cap-kim"
+    scheme_id: str | None          # None for statement pages and the factsheet index
+    doc_type: Literal["SCHEME_PAGE", "SID", "KIM", "FUND_FACTS",
+                      "SERVICE_PAGE", "FACTSHEET_INDEX"]
     title: str
-    url: HttpUrl                   # one of the 7 manifest URLs
+    url: HttpUrl                   # on an allowed HDFC MF host
     fetch_mode: Literal["auto", "manual"]
     content_hash: str              # hash of extracted text, not raw bytes
     doc_as_of: date | None         # date printed on the page, if any
@@ -621,13 +650,16 @@ class FactCard(BaseModel):
     scheme_id: str
     field: Literal["expense_ratio", "exit_load", "min_sip", "min_lumpsum",
                    "lock_in", "riskometer", "benchmark"]
-    status: Literal["found", "not_found"]
+    status: Literal["found", "not_found", "rejected"]   # rejected = failed the quote check
     value: str | None
     verbatim_quote: str | None
-    source_doc_id: str
-    source_content_hash: str       # card is withdrawn when the page hash changes
+    source_doc_id: str | None
+    source_chunk_id: str | None
+    source_content_hash: str | None  # card is withdrawn when that document's hash changes
+    sources_hash: str                # scheme's sources at extraction; re-extract on change
     doc_as_of: date | None
-    reviewed: bool
+    conflicting: bool
+    review_status: Literal["pending", "approved", "rejected"]
 
 class Citation(BaseModel):
     url: HttpUrl
@@ -660,7 +692,7 @@ SQLite (`data/registry.sqlite`) tables: `documents`, `fact_cards`, `index_builds
 | Abuse and cost | Per-IP rate limit (`RATE_LIMIT`, keyed on the hosting platform's trusted proxy header), 500-character input cap, 20 s request timeout. Optional daily spend cap on the API key. |
 | Prompt injection | Retrieved text and questions are wrapped as data, and the prompt tells the model to ignore instructions in them. The validator and server-side citation mapping limit what an injection could achieve. |
 | User-supplied URLs | Never fetched (EC-SEC-01). |
-| Source integrity | Only the 7 manifest URLs on `groww.in`, enforced on fetch and redirect, HTTPS only, with a sanity check against soft-block pages. |
+| Source integrity | Only `www.hdfcfund.com` and `files.hdfcfund.com`, matched exactly and enforced on fetch and every redirect hop, HTTPS only, with a sanity check against soft-block pages. |
 | Web security | Same-origin CORS, Content Security Policy on the static page, text-only rendering of answers. |
 
 ---
@@ -685,7 +717,7 @@ Full details are in [eval.md](eval.md). In summary:
 - **Phase gates:** each build phase has numbered checks with thresholds (e.g. guard set, retrieval Recall@5, validator good/bad set, generation with fixed context).
 - **System evaluation:** a human-labeled golden set (~110 cases) and a held-out set (~25 cases) run through the real pipeline, with 3 reps for release runs. Each case is scored on separate properties: type, value, grounding, citation, format, advice and PII.
 - **Advice judge:** `qwen/qwen3.8-27b` on Groq (`JUDGE_MODEL`), a different model family from the one writing answers, calibrated against human labels (≥ 90% agreement) before use.
-- **Infra failures** (timeouts, API errors, Groww unreachable) are logged separately and never scored as wrong answers.
+- **Infra failures** (timeouts, API errors, a source site unreachable) are logged separately and never scored as wrong answers.
 - **Edge-case coverage:** every case in [edge-case.md](edge-case.md) must map to a test, an evaluation case or a manual check.
 
 **Release targets (summary)**
@@ -699,7 +731,7 @@ Full details are in [eval.md](eval.md). In summary:
 | Advice in any response, not-covered misroutes, PII forwarded or logged | 0 |
 | Latency | p95 ≤ 5 s |
 
-**Automated tests (`tests/`, pytest):** unit tests for guards, resolver, validator and composer; pipeline tests with a fake LLM for every response type, retries and refusals; ingestion tests on saved Groww page fixtures (sanity check, hashing, peer-section stripping, atomic switch, lock); API tests for validation, rate limits and the response schema.
+**Automated tests (`tests/`, pytest):** unit tests for guards, resolver, validator and composer; pipeline tests with a fake LLM for every response type, retries and refusals; ingestion tests on saved HDFC MF page and PDF fixtures (sanity check, linked-PDF discovery, hashing, section stripping, KIM table parsing, atomic switch, lock); API tests for validation, rate limits and the response schema.
 
 ---
 
@@ -715,8 +747,9 @@ Full details are in [eval.md](eval.md). In summary:
 | Vector store | ChromaDB (persistent local) |
 | Keyword search | `rank_bm25` |
 | Fuzzy matching | `rapidfuzz` |
-| HTTP fetching | `httpx` (headless browser such as Playwright only if Phase 1 finds JavaScript-loaded values) |
-| HTML parsing | `trafilatura`, `beautifulsoup4` |
+| HTTP fetching | `httpx` (no headless browser: the HDFC MF pages are server-rendered) |
+| HTML parsing | `beautifulsoup4`, `trafilatura` |
+| PDF parsing | `pymupdf`, `pdfplumber` |
 | Sentence splitting | `pysbd` |
 | Validation and settings | `pydantic`, `pydantic-settings` |
 | Metadata store | SQLite (standard library) |
@@ -738,7 +771,7 @@ growwChatBot/
 ├── .env.example                  # every variable in §15
 ├── config/
 │   ├── schemes.yaml              # scheme registry + aliases
-│   ├── sources.yaml              # groww.in allowlist + the 7 page URLs
+│   ├── sources.yaml              # HDFC MF allowlist, scheme pages, statement pages
 │   ├── templates.yaml            # refusal / redirect / PII / scope / not-found texts
 │   └── education_links.yaml      # fixed links used in templates (§2.1)
 ├── app/
@@ -758,7 +791,8 @@ growwChatBot/
 │   │   ├── hybrid.py
 │   │   └── index_loader.py
 │   ├── llm/
-│   │   ├── client.py             # Groq client, retries, rate limits, fallback model
+│   │   ├── groq_json.py          # strict-JSON Groq calls, rate limits, fallback model (Phase 3)
+│   │   ├── client.py             # answer step on top of groq_json (Phase 4C)
 │   │   ├── prompts.py
 │   │   └── schemas.py
 │   ├── responses/
@@ -769,25 +803,34 @@ growwChatBot/
 │       ├── app.js
 │       └── styles.css
 ├── ingestion/
-│   ├── run.py                    # CLI entry point
-│   ├── check_sources.py
+│   ├── run.py                    # CLI entry point: fetch → parse → check → chunk → index
+│   ├── check_sources.py          # live check of every source (Phase 1)
+│   ├── manifest.py               # loads and validates config/*.yaml
+│   ├── linked_docs.py            # finds SID / KIM / Fund Facts links on scheme pages
 │   ├── fetch.py
 │   ├── parse_html.py
+│   ├── parse_pdf.py
+│   ├── sanity.py                 # block-page and required-content checks
 │   ├── normalize.py
 │   ├── chunk.py
-│   ├── fact_cards.py
-│   ├── review_facts.py
 │   ├── embed.py
 │   ├── build_index.py
-│   └── inspect.py
+│   ├── registry.py
+│   ├── lock.py
+│   ├── models.py
+│   ├── paths.py
+│   ├── inspect.py
+│   ├── fact_cards.py             # extraction, quote check, diff report, FACT_CARD chunks
+│   └── review_facts.py           # approve / reject cards
 ├── data/                         # gitignored
-│   ├── raw/
-│   ├── index/
+│   ├── raw/                      # newest 3 copies of each fetched source
+│   ├── processed/                # chunks per document
+│   ├── index/                    # one folder per version + `current` pointer
 │   ├── reports/
 │   └── registry.sqlite
 ├── eval/                         # datasets and runners, see eval.md §16
 ├── tests/
-│   └── fixtures/                 # saved Groww page samples
+│   └── fixtures/                 # saved HDFC MF page and PDF samples
 └── docs/
     ├── problemStatement.md
     ├── architecture.md
@@ -826,7 +869,8 @@ growwChatBot/
 ## 16. Deployment
 
 - **Local**: `uv sync` → `python -m ingestion.run` → `python -m ingestion.review_facts` → `uvicorn app.main:app --reload` → open `http://localhost:8000`.
-- **Container**: the Dockerfile installs dependencies, downloads the embedding model at build time, runs as a non-root user and has a `HEALTHCHECK` on `/healthz`. The index is either built in CI and baked into the image, or mounted from a volume and refreshed by a scheduled ingestion job. A headless browser, if needed, makes the image noticeably larger.
+- **Container**: the Dockerfile installs dependencies, downloads the embedding model at build time, runs as a non-root user and has a `HEALTHCHECK` on `/healthz`. The index is either built in CI and baked into the image, or mounted from a volume and refreshed by a scheduled ingestion job.
+- **Public deployment needs permission.** HDFC MF's website terms allow downloading its content "for non-commercial and/or personal use only" and forbid using it "for public or commercial purposes… without HDFC AMC's written permission". Until that permission exists, run the assistant locally or as a private demo (§18).
 - **Hosting**: any container host with ~1 GB RAM. A single instance is enough for this scope. Configure the platform's trusted proxy header so rate limits apply per user.
 - **Release checks**: see [eval.md](eval.md) §12: fresh-clone test, deployed smoke set, secrets scan, and a passing 3-rep scorecard for the deployed commit and index.
 
@@ -839,7 +883,7 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 | Phase | Scope |
 |---|---|
 | 0 | Project setup |
-| 1 | Corpus definition: the 7 Groww pages, coverage matrix, decisions in §2.1 |
+| 1 | Corpus definition: official HDFC MF sources, coverage matrix, decisions in §2.1 |
 | 2 | Ingestion pipeline |
 | 3 | Fact cards |
 | 4A / 4B / 4C | Guards, retrieval, LLM step + validator + composer |
@@ -853,9 +897,9 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 
 | Limitation / risk | Mitigation or note |
 |---|---|
-| The corpus is Groww scheme pages, while the problem statement's constraints name AMC, AMFI and SEBI as sources and exclude aggregators. | Deliberate project decision (D1). Stated in the README so reviewers know. |
-| Groww may block scripted requests, or its terms may not allow them. | Checked in Phase 1. Manual mode keeps the Groww URL for citations. |
-| Groww pages may load values with JavaScript or change layout. | Phase 1 check; sanity check on each fetch; fact-card quote check and diff report catch changed or missing values. |
+| HDFC MF's website terms allow personal, non-commercial use only. Public or commercial use needs HDFC AMC's written permission. | Run locally or as a private demo until permission exists. Stated in the README. Groww's terms are stricter still, which is one reason Groww pages are not a source (D1). |
+| HDFC MF may change page layout, link labels or document URLs. | Linked PDFs are found by link text, not stored URLs. Sanity check on each fetch; a missing link fails only that document. Fact-card quote check and diff report catch changed or missing values. |
+| Scheme pages give no as-of date for TER, exit load or riskometer. | The footer's fetch date is the only date for those values (D2). Weekly refresh. |
 | Data is only as fresh as the last fetch (weekly). | As-of dates in answers when shown, fetch date in the footer, stale-source flag on `/healthz`. NAV is never quoted. |
 | Statement and capital-gains questions are probably not answerable from the 7 pages. | `not_found` (§2.1). |
 | Only Direct Growth plans and the FoFs are covered. | "Not covered" reply for Regular, IDCW and plain ETFs (D11). |
@@ -870,6 +914,8 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 
 ## 19. Open Items
 
-- **Confirm §2.1 decisions** in Phase 1, especially whether fixed AMFI/SEBI education links are allowed alongside the 7 pages.
-- **Fetching permission and page rendering.** Check robots.txt, terms of use, and whether facts appear in the raw HTML.
-- **Example questions in the UI.** Confirm the three in §8 against the coverage matrix.
+- **Human check of the coverage matrix (EV-1-07).** A second person checks 10 random cells against the live sources before `eval/fact_labels.yaml` is used.
+- **Permission for public deployment.** HDFC MF's terms limit use to personal and non-commercial (§18). Ask HDFC AMC for written permission before deploying publicly.
+- **Former scheme names.** Confirm the "former name" aliases in `config/schemes.yaml` against each SID during Phase 2.
+
+Resolved in Phase 1 (11 Nov 2026): the corpus (D1), the §2.1 decisions, robots.txt and terms checks, page rendering (server-side, no headless browser needed), and the UI example questions.

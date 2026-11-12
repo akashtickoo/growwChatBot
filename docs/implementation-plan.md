@@ -62,13 +62,15 @@ flowchart LR
 
 ## Phase 0: Project Setup
 
+**Status:** done on 11 Nov 2026 (commit `29296e5`). See [eval-log.md](eval-log.md).
+
 **Goal:** an empty but runnable project with the folder layout from §14.
 
 **Depends on:** nothing.
 
 ### Tasks
 
-- [ ] Create `pyproject.toml` with the dependencies from §13: `fastapi`, `uvicorn`, `groq`, `sentence-transformers`, `chromadb`, `rank-bm25`, `rapidfuzz`, `httpx`, `trafilatura`, `beautifulsoup4`, `pysbd`, `pydantic`, `pydantic-settings`, `slowapi`, `pyyaml`, `tzdata` (time zone data; Windows has none built in, and the footer needs Asia/Kolkata). Dev dependencies: `pytest`, `ruff`.
+- [ ] Create `pyproject.toml` with the dependencies from §13: `fastapi`, `uvicorn`, `groq`, `sentence-transformers`, `chromadb`, `rank-bm25`, `rapidfuzz`, `httpx`, `trafilatura`, `beautifulsoup4`, `pymupdf`, `pdfplumber`, `pysbd`, `pydantic`, `pydantic-settings`, `slowapi`, `pyyaml`, `tzdata` (time zone data; Windows has none built in, and the footer needs Asia/Kolkata). Dev dependencies: `pytest`, `ruff`.
 - [ ] Create the folder skeleton from §14 (`app/`, `ingestion/`, `config/`, `data/`, `eval/`, `tests/`), with empty `__init__.py` files.
 - [ ] Add `.gitignore`: `.env`, `data/raw/`, `data/index/`, `data/reports/`, `data/registry.sqlite`, `__pycache__/`, `.venv/`.
 - [ ] Add `.env.example` with every variable in the configuration table below.
@@ -114,89 +116,91 @@ Same as architecture §15.
 
 ## Phase 1: Corpus Definition
 
-**Goal:** fix the corpus to exactly the Groww scheme pages listed in the problem statement, and record which facts each page provides.
+**Status:** done on 11 Nov 2026, except the human spot-check (EV-1-07). See [eval-log.md](eval-log.md).
+
+**Goal:** a verified list of the official sources for the 7 schemes, and a record of which source holds each fact.
 
 **Depends on:** Phase 0.
 
-**Corpus decision:** the assistant ingests and cites **only** the URLs below. No AMC, AMFI, SEBI or other pages are added to the corpus. This answers the problem statement's first open question (Groww pages count as the source) and is recorded as architecture decision D1.
+**Corpus decision (D1, decided 11 Nov 2026):** official HDFC Mutual Fund sources only. The Groww URLs in the problem statement only identify the schemes (`groww_ref`); they are never fetched, indexed or cited. Reasons: the problem statement allows only AMC, AMFI and SEBI sources and excludes aggregators, and Groww's terms forbid entering its content into a database or redistributing it.
 
-| Doc ID | Scheme | URL |
+| Scheme | Official scheme page (Direct plan) | Linked PDFs |
 |---|---|---|
-| `groww-hdfc-large-cap` | HDFC Large Cap Fund – Direct Growth | https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth |
-| `groww-hdfc-mid-cap` | HDFC Mid Cap Fund – Direct Growth | https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth |
-| `groww-hdfc-small-cap` | HDFC Small Cap Fund – Direct Growth | https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth |
-| `groww-hdfc-multi-cap` | HDFC Multi Cap Fund – Direct Growth | https://groww.in/mutual-funds/hdfc-multi-cap-fund-direct-growth |
-| `groww-hdfc-elss-tax-saver` | HDFC ELSS Tax Saver Fund – Direct Plan Growth | https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth |
-| `groww-hdfc-gold-etf-fof` | HDFC Gold ETF Fund of Fund – Direct Plan Growth | https://groww.in/mutual-funds/hdfc-gold-etf-fund-of-fund-direct-plan-growth |
-| `groww-hdfc-silver-etf-fof` | HDFC Silver ETF Fund of Fund – Direct Growth | https://groww.in/mutual-funds/hdfc-silver-etf-fof-direct-growth |
+| HDFC Large Cap Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-large-cap-fund/direct | SID, KIM, Fund Facts |
+| HDFC Mid Cap Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-mid-cap-fund/direct | SID, KIM, Fund Facts |
+| HDFC Small Cap Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-small-cap-fund/direct | SID, KIM, Fund Facts |
+| HDFC Multi Cap Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-multi-cap-fund/direct | SID, KIM, Fund Facts |
+| HDFC ELSS Tax Saver Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-elss-tax-saver-fund/direct | SID, KIM, Fund Facts |
+| HDFC Gold ETF Fund of Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-gold-etf-fund-fund/direct | SID, KIM |
+| HDFC Silver ETF Fund of Fund | https://www.hdfcfund.com/explore/mutual-funds/hdfc-silver-etf-fund-fund/direct | SID, KIM |
+
+Also in the corpus: three statement pages (request statement, consolidated account statement, capital gain statement guide) and the Factsheets index page. Fixed education links, used in replies but never ingested: SEBI Investor Education and AMFI Investor Corner.
 
 ### Tasks
 
 **Scheme registry**
 
-- [ ] Write `config/schemes.yaml` with the schemes above: `id`, `name`, `category`, `source_doc_id` and `aliases`.
-- [ ] Take aliases from the names and wording used on each Groww page (e.g. "hdfc smallcap", "hdfc mid cap").
+- [x] `config/schemes.yaml`: the 7 schemes with `id`, `name`, `category`, `groww_ref` (identifier only), `source_doc_id` and `aliases`.
+- [x] Aliases taken from the HDFC MF page names. Every alias contains "hdfc" (EC-SCH-07).
+- [ ] Confirm the "former name" aliases against each SID. Moved to Phase 2, when SIDs are parsed.
 
 **Source manifest**
 
-- [ ] Write `config/sources.yaml` with `groww.in` as the only allowed domain and one entry per scheme page:
-
-  ```yaml
-  allowed_domains:
-    - groww.in
-
-  documents:
-    - id: groww-hdfc-mid-cap
-      scheme_id: hdfc-mid-cap
-      doc_type: SCHEME_PAGE
-      url: https://groww.in/mutual-funds/hdfc-mid-cap-fund-direct-growth
-      format: html
-      refresh: weekly
-    # ... one entry for each URL in the table above, nothing else
-  ```
-
-- [ ] Add a test that fails if `sources.yaml` contains any URL not in the table above.
+- [x] `config/sources.yaml`: only `www.hdfcfund.com` and `files.hdfcfund.com`. Lists the 7 Direct-plan scheme pages, the 3 statement pages and the Factsheets index.
+- [x] Scheme PDFs (SID, KIM, Fund Facts) are found on each scheme page by the start of their link text (`ingestion/linked_docs.py`), because their URLs carry dates and version IDs. Fund Facts exists for the 5 equity schemes only.
+- [x] `config/education_links.yaml`: SEBI Investor Education and AMFI Investor Corner, with their own allowlist.
+- [x] Manifest tests (`tests/test_manifest.py`): Groww refs match the problem statement, no Groww URL is a source, only HDFC MF hosts, Direct-plan pages only, SID and KIM linked from every scheme page, education links on official hosts.
 
 **Checks**
 
-- [ ] Check that `groww.in/robots.txt` and Groww's terms of use allow fetching these pages. If they don't, use the manual-save fallback below.
-- [ ] Write `python -m ingestion.check_sources`. It checks each URL is on the allowlist, returns HTTP 200 and is HTML.
-- [ ] Save one raw response per page and check that the facts appear in the HTML the fetcher receives, not only after JavaScript runs in a browser. Record the result. If facts are missing, Phase 2 needs a headless browser (e.g. Playwright) or must read the data embedded in the page.
-- [ ] Build a **coverage matrix**: schemes × 7 fields (`expense_ratio`, `exit_load`, `min_sip`, `min_lumpsum`, `lock_in`, `riskometer`, `benchmark`). Each cell names the section of the Groww page that shows the fact, or says "not on page". Save it as `docs/coverage-matrix.md`.
-- [ ] Add a row for the statement / capital gains download process and note whether any of the pages explain it.
-- [ ] Note any "as of" date the page shows next to values such as the expense ratio. If there is none, answers rely on the fetch date in the footer (D2).
+- [x] robots.txt allows the pages used on `www.hdfcfund.com` (only `smartlink` and `quicklink` paths are disallowed), `www.amfiindia.com` and `www.sebi.gov.in`.
+- [x] Terms of use. HDFC MF allows downloading its content "for non-commercial and/or personal use only" and forbids public or commercial use without HDFC AMC's written permission. So the assistant runs locally or as a private demo until permission is given (architecture §16, §18). Groww's terms are stricter.
+- [x] `python -m ingestion.check_sources`: 32/32 pass (7 scheme pages, 19 linked PDFs, 3 statement pages, the Factsheets index, 2 education links).
+- [x] Raw HTML check: scheme pages are server-rendered, and every fact is in the raw HTML. No headless browser needed.
+- [x] Coverage matrix (`docs/coverage-matrix.md`): 49/49 cells filled from the scheme pages and KIMs. Statement questions are covered by the statement pages.
+- [x] As-of dates recorded: none for TER, exit load or riskometer; AUM 31/10/2026; Fund Facts October 2026; KIMs and SIDs 21 Nov 2025.
+- [x] Draft fact labels (`eval/fact_labels.yaml`): 49 labels, written before any extraction, marked as not yet human-verified.
+- [ ] **EV-1-07:** a second person checks 10 random coverage-matrix cells against the live sources, then fills in `verified_by` and `verified_on`.
 
-**Effects to record**
+**Decisions recorded** (architecture §2.1)
 
-A Groww-only corpus changes some behavior described elsewhere. Make each decision and record it in `architecture.md`:
+- [x] Citations: the official document each answer came from.
+- [x] Performance questions: link the scheme's Fund Facts PDF, or the Factsheets page for the two FoFs.
+- [x] Statement and capital gains questions: answered from the HDFC MF statement pages.
+- [x] Refusal and PII replies: fixed SEBI / AMFI education links.
+- [x] The 12 decisions in [edge-case.md](edge-case.md) §18: accepted as proposed.
+- [x] UI example questions: Mid Cap expense ratio, ELSS lock-in, capital gains statement.
 
-- [ ] **Citations:** every answer cites its scheme's Groww page.
-- [ ] **Performance questions:** the problem statement asks for a link to the official factsheet. With no extra URLs, the redirect links the scheme's Groww page instead.
-- [ ] **Statement and capital gains questions:** if the coverage matrix shows the pages don't cover them, these questions get the `not_found` response.
-- [ ] **Refusal links:** refusals must include an educational link (AMFI or SEBI). These would be fixed links in the refusal template, not ingested content. Decide whether to keep one or two in `config/education_links.yaml` (recommended, since the problem statement requires them) or drop them.
-- [ ] Draft the three UI example questions so each can be answered from these pages.
-- [ ] Make the 12 decisions listed in [edge-case.md](edge-case.md) §18 and record them in `architecture.md`.
+### Findings for Phase 2
+
+- Every scheme page shows a returns figure, NAV and benchmark performance tables, "Value of Investment of Rs 10,000", "Ideal for" and "Product Suitability". These must be stripped.
+- `trafilatura` picks the wrong part of the Small Cap and Multi Cap pages. Read the labeled boxes ("TER", "Min SIP", "Riskometer", …) with BeautifulSoup instead.
+- Each page also shows a benchmark riskometer. Take the scheme's.
+- The KIM "Minimum Application Amount" table is multi-column. Parse it as a table with `pdfplumber`.
 
 ### Deliverables
 
-- `config/schemes.yaml`, `config/sources.yaml` (only the URLs above)
-- `ingestion/check_sources.py` and the manifest test
-- `docs/coverage-matrix.md`
+- `config/schemes.yaml`, `config/sources.yaml`, `config/education_links.yaml`
+- `ingestion/manifest.py`, `ingestion/linked_docs.py`, `ingestion/check_sources.py` and their tests
+- `docs/coverage-matrix.md`, `eval/fact_labels.yaml`
 - The decisions above recorded in `architecture.md`
 
 ### Exit criteria
 
-- `check_sources` passes for every URL, and the manifest test confirms no other URL is present.
-- The coverage matrix is complete, with every gap written down.
-- Every decision under "Effects to record" is made and recorded.
+- [x] `check_sources` passes for every source, and the manifest tests pass.
+- [x] The coverage matrix is complete, with every gap written down.
+- [x] Every decision is made and recorded.
+- [ ] EV-1-07 spot-check done by a second person.
 
 ### Risk to watch
 
-If Groww blocks scripted requests (HTTP 403 or bot protection), or its terms don't allow fetching, save each page by hand into `data/raw/<doc_id>/` and mark it `fetch: manual` in `sources.yaml`. The Groww URL is still used for the citation. Ingestion then reads the local file.
+If HDFC MF blocks scripted requests (HTTP 403 or bot protection), save that document by hand into `data/raw/<doc_id>/` and mark it `fetch: manual` in `sources.yaml`. The official URL is still used for the citation.
 
 ---
 
 ## Phase 2: Ingestion Pipeline
+
+**Status:** done on 11 Nov 2026. First index `v20261110T211905Z`: 430 chunks from 17 documents. See [eval-log.md](eval-log.md).
 
 **Goal:** one command that turns the source manifest into a versioned search index (§5).
 
@@ -206,57 +210,66 @@ If Groww blocks scripted requests (HTTP 403 or bot protection), or its terms don
 
 **Registry**
 
-- [ ] Create SQLite tables `documents`, `fact_cards` and `index_builds` (§9) with `CREATE TABLE IF NOT EXISTS`.
+- [x] SQLite tables `documents`, `fact_cards` and `index_builds` (§9) with `CREATE TABLE IF NOT EXISTS` (`ingestion/registry.py`).
 
 **Fetch (`ingestion/fetch.py`, §5.1)**
 
-- [ ] `httpx` client: 20 s timeout, 3 retries with backoff, generic User-Agent, HTTPS only.
-- [ ] Check the allowlist before the request and again on the final URL after redirects.
-- [ ] Save raw bytes to `data/raw/<doc_id>/<fetched_at>.<ext>`.
-- [ ] Store a SHA-256 hash of the **extracted page text** (after stripping, see Parse), not the raw bytes. Groww pages change on every load (daily NAV, timestamps, tokens), so a raw-byte hash would mark every page as changed (EC-ING-03).
-- [ ] If that hash is unchanged, update only `fetched_at` and skip chunking and fact extraction.
-- [ ] Sanity-check every response: scheme name present, minimum text length, expected sections. A captcha, "access denied" or empty page counts as a failed fetch, even with HTTP 200 (EC-ING-01).
-- [ ] If the fetch fails, keep the last good version and record the failure in the run report.
-- [ ] Support `fetch: manual` documents from Phase 1.
+- [x] `httpx` client: 20 s timeout, 3 retries with backoff (429/5xx, honoring `Retry-After` up to 30 s), generic User-Agent, HTTPS only.
+- [x] Allowlist checked before the request and on every redirect hop.
+- [x] Raw bytes saved to `data/raw/<doc_id>/<fetched_at>.<ext>`, keeping the newest 3 copies.
+- [x] Linked PDFs found on each scheme page with `ingestion/linked_docs.py` and fetched. A missing link fails only that document.
+- [x] SHA-256 hash of the **extracted text**, not the raw bytes (EC-ING-03).
+- [x] Unchanged hash: only `fetched_at` is updated; no re-parsing into chunks, no index rebuild.
+- [x] Sanity check on every response (`ingestion/sanity.py`): content type, scheme name, minimum length, required facts and sections. A captcha or empty page fails even with HTTP 200 (EC-ING-01).
+- [x] A failed fetch keeps the last good version and is recorded in the run report.
+- [x] `fetch: manual` documents read from `data/raw/<doc_id>/`.
 
-**Parse (`ingestion/parse_html.py`, §5.2)**
+**Parse (`ingestion/parse_html.py`, `ingestion/parse_pdf.py`, §5.2)**
 
-- [ ] HTML: `trafilatura`, with `BeautifulSoup` as fallback. Keep headings and tables. Turn table rows into readable sentences.
-- [ ] If Phase 1 found values missing from the raw HTML, read the page's embedded data or render it with a headless browser (e.g. Playwright).
-- [ ] Each Groww page covers one scheme, so its chunks take `scheme_id` from the document entry.
-- [ ] Strip "similar funds", peer-comparison and other-fund sections, so chunks hold only the scheme's own data (EC-RET-06, EC-FC-02).
+- [x] Scheme pages read allowlist-first with `BeautifulSoup`: the labeled fact boxes become a "Key facts" section; only "What is HDFC …?", "Investment Strategy", Fund Managers, Exit Load and factual FAQs are kept. Statement pages are also read with `BeautifulSoup` (headings and text in page order) instead of `trafilatura`, since the page template is the same.
+- [x] The scheme's riskometer is taken from the fact box, not the benchmark riskometer.
+- [x] KIMs: `pdfplumber` for page text and tables, with table areas cut out of the page text. The "Minimum Application Amount" table becomes "Purchase (including switch-in): ₹100/- …; Additional Purchase …; Redemption …". (`pymupdf` is used for the text-layer check and SID scans rather than KIM text, so table text isn't duplicated.)
+- [x] PDFs with no text layer fail the sanity check.
+- [x] Scheme pages and their PDFs take `scheme_id` from the manifest. Statement pages have `scheme_id: null`.
+- [x] Stripped: returns, NAV and benchmark performance, "Value of Investment of Rs 10,000", "Ideal for", "Why invest", "Who can consider", holdings, "Product Suitability", the KIM suitability table and the KIM "Performance of the Scheme" block (EC-PERF-07, EC-INT-06).
+- [x] Former names confirmed in the SIDs and KIMs: "HDFC Top 100 Fund" (Large Cap) and "HDFC Mid-Cap Opportunities Fund" (Mid Cap). No former name is listed for ELSS; "hdfc taxsaver" stays as a common short name.
+- [x] Layout quirks handled: Exit Load bullet points as `h3` tags (Multi Cap) and fund-manager headings without "Mr.".
 
 **Normalize and chunk (`ingestion/normalize.py`, `ingestion/chunk.py`, §5.3)**
 
-- [ ] Normalize Unicode (NFKC), whitespace, broken hyphenation and currency forms ("₹", "Rs.", "INR").
-- [ ] Split on headings, then into ~400-token windows with ~60-token overlap. Never split a table.
-- [ ] Add the context header `[Scheme | Doc type | Section]` to each chunk.
-- [ ] Attach chunk metadata: `chunk_id`, `doc_id`, `scheme_id`, `doc_type`, `section`, `source_url`, `doc_as_of`.
+- [x] Unicode (NFKC), whitespace, line-break hyphens and currency forms ("Rs.", "INR", "Re." → "₹").
+- [x] ~300-word windows (≈400 tokens) with a 45-word overlap (≈60 tokens). Tables are never split.
+- [x] Context header `[Scheme | Doc type | Section]` on each chunk.
+- [x] Chunk metadata: `chunk_id`, `doc_id`, `scheme_id`, `doc_type`, `section`, `source_url`, `doc_as_of`, `page`, `is_table`.
 
 **Embed and index (`ingestion/embed.py`, `ingestion/build_index.py`, §5.5)**
 
-- [ ] Embed with `BAAI/bge-small-en-v1.5`, normalized vectors, in batches.
-- [ ] Write ChromaDB and the BM25 index into `data/index/v<timestamp>/`.
-- [ ] Switch the `current` pointer only after a successful build: write a temp file, then `os.replace`.
-- [ ] Record the build in `index_builds`.
+- [x] `BAAI/bge-small-en-v1.5`, normalized vectors, batches of 32.
+- [x] ChromaDB (cosine, telemetry off) and `chunks.jsonl` in `data/index/v<timestamp>/`. BM25 is built from `chunks.jsonl` at load time in Phase 4B, rather than stored as a pickle.
+- [x] `current` pointer switched only after a successful build (temp file, then `os.replace`).
+- [x] Builds recorded in `index_builds`. A build is skipped when the document hashes match the current version.
+- [x] SIDs, Fund Facts and the Factsheets index are fetched and registered but not indexed (`index: false` in `sources.yaml`).
 
 **CLI and inspection**
 
-- [ ] `python -m ingestion.run`, with `--only <doc_id>`. Writes a run report to `data/reports/ingest_<date>.md`.
-- [ ] `python -m ingestion.inspect --scheme <id>` prints chunks so they can be checked by eye.
-- [ ] Use a lock file so two ingestion runs can't overlap. A second run exits with a message (EC-ING-08).
+- [x] `python -m ingestion.run`, with `--only <doc_id>` and `--force`. Writes `data/reports/ingest_<time>.md`.
+- [x] `python -m ingestion.inspect --scheme <id>` (also `--general`, `--doc-type`, `--grep`).
+- [x] `python -m ingestion.audit`: the EV-2-07 to EV-2-10 chunk checks.
+- [x] Lock file `data/ingest.lock`. A second run exits with a message (EC-ING-08).
 
 **Tests**
 
-- [ ] Save sample Groww page HTML files in `tests/fixtures/`.
-- [ ] Test parsers on the fixtures.
-- [ ] Test that a table is never split across chunks.
-- [ ] Test that a non-allowlisted URL and an off-allowlist redirect are both rejected.
-- [ ] Test that the index pointer is unchanged when a build fails partway.
-- [ ] Test that a captcha or empty-page fixture is treated as a failed fetch.
-- [ ] Test that two copies of a page differing only in NAV or timestamps give the same hash.
-- [ ] Test that peer-fund sections are removed from a Groww page fixture.
-- [ ] Test that a second ingestion run exits while the first holds the lock.
+- [x] Synthetic fixtures with the HDFC MF layout (`tests/fixtures/scheme_page.html`, PDFs generated in `tests/fixture_builders.py`). No HDFC MF content is committed.
+- [x] Parser tests on the fixtures, plus a check of the saved real pages against `eval/fact_labels.yaml` (skipped when `data/raw/` is empty).
+- [x] A table is never split across chunks.
+- [x] A non-allowlisted URL and an off-allowlist redirect are both rejected.
+- [x] The index pointer is unchanged when a build fails partway.
+- [x] A captcha page is treated as a failed fetch.
+- [x] Pages differing only in NAV, returns or timestamps give the same content.
+- [x] Returns, performance and suitability sections are removed.
+- [x] The KIM minimum-amount table parses to the right value for each column.
+- [x] A second ingestion run waits for the lock.
+- [x] End-to-end run against a fake site: first run, unchanged second run, changed fact, block page, missing PDF link.
 
 ### Implementation note
 
@@ -268,14 +281,16 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 ### Exit criteria
 
-- A build from scratch succeeds and the run report shows every document as fetched, unchanged, failed or skipped.
-- A second run skips unchanged documents.
-- `inspect` output looks correct for at least 2 schemes, including the exit-load table.
-- Ingestion tests pass.
+- [x] A build from scratch succeeds and the run report shows every document as fetched, unchanged, failed or skipped (30/30 fetched).
+- [x] A second run skips unchanged documents (30/30 unchanged, index not rebuilt).
+- [x] `inspect` output looks correct for at least 2 schemes, including the exit-load text and the KIM minimum-amount table (Mid Cap, Small Cap, Gold FoF checked).
+- [x] Ingestion tests pass.
 
 ---
 
 ## Phase 3: Fact Cards
+
+**Status:** built and run on 13 Nov 2026. All 49 cards extracted, every one matching its Phase 1 label, and **waiting for human review** (exit criterion 1). See [eval-log.md](eval-log.md).
 
 **Goal:** reviewed, structured records for the 7 key fields of each scheme (D10, §5.4).
 
@@ -283,31 +298,35 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 ### Tasks
 
-- [ ] For each scheme and field, pick candidate chunks with a BM25 search on field keywords within that scheme (e.g. "exit load", "redeemed", "redemption").
-- [ ] Call the Groq model (`GROQ_MODEL`) once per scheme × field, with `response_format` set to `json_schema` and `strict: true`. Fields: `status` (`found` / `not_found`), `field`, `value`, `verbatim_quote`, `source_doc_id`, `doc_as_of`. Extraction runs offline, so use `EXTRACTION_REASONING_EFFORT` (`medium`).
-- [ ] Reject any card whose `verbatim_quote` is not found in the normalized source text.
-- [ ] Compare each value with the previous build. Write changes to `data/reports/fact_diff_<date>.md`.
-- [ ] Write a review CLI, `python -m ingestion.review_facts`. It shows each card with its quote and source URL, and lets you mark it reviewed or rejected.
-- [ ] Index **only reviewed** cards, rendered as short text chunks with `doc_type: FACT_CARD`. Their `source_url` is the scheme's Groww page.
-- [ ] Re-extract only when the source document's hash has changed, to limit API cost.
-- [ ] Store the source content hash on each card. When the page's hash changes, withdraw its cards from the index until new ones are reviewed, so an outdated value is never served (EC-RET-04, EC-FC-06).
+- [x] Candidate chunks per scheme and field: the scheme page's "Key facts" (and "Exit Load") chunks are always included, plus the top 4 BM25 matches on field keywords over that scheme's page and KIM chunks.
+- [x] One Groq call per scheme × field (`GROQ_MODEL`, `EXTRACTION_REASONING_EFFORT` = `medium`), with `response_format` `json_schema` and `strict: true`. The model returns `status`, `value`, `verbatim_quote`, the id of the source it quoted, and `conflicting`. `source_doc_id`, `source_chunk_id` and `doc_as_of` are filled in from that source, not written by the model.
+- [x] Each field names a preferred source (scheme page, or the KIM table for minimum lumpsum). Found on the first live run: without it, the model took the Mid Cap TER from the KIM's *previous financial year* actual expenses (0.76%) instead of the current page value (0.74%).
+- [x] Quote check: the quote must appear in the cited source (after normalization), and every number in the value must appear in the quote. A failing card gets one retry with the problems listed, then is stored as `rejected`.
+- [x] Diff report `data/reports/fact_diff_<time>.md`: changed or new values versus the previous extraction, label matches, review status, notes.
+- [x] Review CLI `python -m ingestion.review_facts`: interactive approve/reject/skip, plus `--list`, `--approve SCHEME:FIELD …` and `--reject … --note`.
+- [x] Only **approved** `found` cards are indexed, as `FACT_CARD` chunks whose `source_url` is the document the value came from. `python -m ingestion.run --index-only` rebuilds the index without re-fetching.
+- [x] Each card is compared with its Phase 1 label in the diff report and the review screen.
+- [x] Re-extraction only when the scheme's sources change (combined hash of its page and KIM), or with `--force`.
+- [x] Each card stores its source document's content hash. An approved card whose source has changed is left out of the index until re-reviewed (EC-RET-04, EC-FC-06). Exception: if re-extraction gives the same value and quote from the same document, the approval carries over, so an unrelated page change (such as monthly AUM) doesn't force re-reviewing every card.
+- [x] Shared Groq client `app/llm/groq_json.py` (strict JSON, waits out rate limits using `retry-after`, optional fallback model, typed errors). Phase 4C reuses it.
 
 ### Tests
 
-- [ ] With a fake LLM: a card with a quote that is not in the source is rejected.
-- [ ] Change a value in a fixture and confirm it appears in the diff report.
-- [ ] Unreviewed cards are not indexed.
-- [ ] A reviewed card whose source hash has changed is withdrawn from the index.
+- [x] With a fake LLM: a card with a quote that is not in the source is retried, then rejected.
+- [x] A changed value in a fixture appears in the diff report with its previous value.
+- [x] Unreviewed cards are not indexed.
+- [x] A reviewed card whose source hash has changed is withdrawn from the index.
+- [x] Also: unchanged sources aren't re-extracted, approval carry-over, label mismatch flagged, LLM outage keeps the previous card, candidate selection, and the Groq client's rate-limit, fallback and bad-reply handling.
 
 ### Deliverables
 
-- `ingestion/fact_cards.py`, `ingestion/review_facts.py`
-- Up to 49 reviewed cards (7 schemes × 7 fields), with non-applicable or missing ones documented.
+- [x] `ingestion/fact_cards.py`, `ingestion/review_facts.py`, `app/llm/groq_json.py`
+- [x] 49 cards (7 schemes × 7 fields), all `found`, none missing. Review pending.
 
 ### Exit criteria
 
-- Every applicable card is reviewed against the live Groww page.
-- The diff report works on a second run.
+- [ ] Every applicable card is reviewed against its live official source: run `python -m ingestion.review_facts`, then `python -m ingestion.run --index-only`.
+- [x] The diff report works on a second run (49/49 skipped, no API calls, 0 changes, 0 label mismatches).
 
 ---
 
@@ -433,7 +452,8 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 - [ ] Composer builds `ChatResponse`. The citation URL and title come from the registry by `doc_id`. `last_updated` is that document's `fetched_at`.
 - [ ] Store times in UTC and show the footer date in Asia/Kolkata, formatted as `10 Nov 2026` (EC-CIT-03).
 - [ ] Add "not covered" wording to the `out_of_scope` template for Regular/IDCW plans and ETFs. It names the covered Direct Growth or FoF scheme and links its page (EC-SCH-05, EC-SCH-09).
-- [ ] `performance_redirect` links the scheme's Groww page from the registry (architecture §2.1).
+- [ ] `performance_redirect` links the scheme's Fund Facts PDF from the registry, or the Factsheets page for the two FoFs (architecture §2.1).
+- [ ] Education links come from `config/education_links.yaml`: SEBI for refusals and PII replies, AMFI for scope replies and `not_found` without a scheme.
 
 **Orchestrator (`app/pipeline.py`)**
 
@@ -531,7 +551,7 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 - [ ] Write about 80 labeled questions using the groups in §12.1.
 - [ ] Add every case marked **E** in [edge-case.md](edge-case.md). This takes the set to roughly 130 questions.
-- [ ] Take expected values from the live Groww pages, read by a person. Never copy them from system output.
+- [ ] Take expected values from `eval/fact_labels.yaml` (Phase 1) and the live official sources, read by a person. Never copy them from system output.
 - [ ] For lock-in questions on non-ELSS schemes, the expected result depends on what the pages state: a factual answer if a source says so, otherwise `not_found`.
 - [ ] Hold back about 20 questions, ideally written by someone else, and use them only for the final check to avoid tuning to the test.
 
@@ -594,6 +614,7 @@ All §12.2 targets met on the full set and on the held-back questions:
 
 **Deployment**
 
+- [ ] **Public deployment only with HDFC AMC's written permission.** Their terms allow personal, non-commercial use only. Without permission, run it locally or as a private demo (architecture §16).
 - [ ] Deploy to a container host with about 1 GB RAM. Set `GROQ_API_KEY` as a secret.
 - [ ] Smoke test the deployed URL: `/healthz`, the three example questions, one advisory question, one PII message.
 
@@ -640,13 +661,13 @@ How each problem-statement requirement is built and checked.
 | Requirement | Built in | Component | Verified by |
 |---|---|---|---|
 | Answer facts: expense ratio, exit load, min SIP, lock-in, riskometer, benchmark | 3, 4B, 4C | Fact cards, hybrid retrieval, LLM step | Golden set fact groups |
-| Statement / capital gains process | 1 | Coverage matrix; `not_found` if the pages don't cover it (architecture §2.1) | Golden set process group |
+| Statement / capital gains process | 1, 2, 4B | HDFC MF statement pages (architecture §2.1) | Golden set process group |
 | At most 3 sentences | 4C | Validator, templates | Unit tests, eval format compliance |
 | Exactly one citation link | 4C | Composer, `source_id` mapping | Unit tests, eval citation checks |
 | Footer "Last updated from sources: <date>" | 4C | Composer (D2) | Unit tests, eval format compliance |
 | Refuse advisory questions politely, with an education link | 4A, 4C | Intent rules, LLM `advisory` status, refusal template | Intent tests, golden set advisory group |
-| Performance questions: no figures, link only (scheme's Groww page, architecture §2.1) | 4A, 4C | Intent rules, `performance_redirect`, validator policy check | Golden set performance group |
-| Sources: only the Groww scheme pages from the problem statement (Phase 1 decision) | 1, 2 | `groww.in` allowlist and fixed manifest | Manifest test, ingestion tests, citation validity |
+| Performance questions: link to the official factsheet only | 4A, 4C | Intent rules, `performance_redirect` (Fund Facts PDF or Factsheets page), validator policy check | Golden set performance group |
+| Official sources only (AMC, AMFI, SEBI); no aggregators | 1, 2 | HDFC MF allowlist, manifest tests (no Groww URL as a source), education-link allowlist | Manifest tests, ingestion tests, citation validity |
 | No PAN, Aadhaar, account numbers, OTPs, email, phone | 4A, 4C, 5 | PII guard, log policy, client-side warning | PII tests, golden set PII group |
 | Welcome message, three examples, visible disclaimer | 5 | Static UI, `/api/meta` | Manual checklist |
 | README: setup, AMC + schemes, architecture, limitations | 7 | README | Fresh-clone check |
@@ -658,8 +679,9 @@ How each problem-statement requirement is built and checked.
 
 | Risk | Phase | Response |
 |---|---|---|
-| Groww blocks scripted requests or loads facts with JavaScript | 1, 2 | Manual save with `fetch: manual` (Groww URL kept for citations), or a headless browser. |
-| Groww page layout changes and breaks extraction | 2, 3 | Verbatim-quote check and the fact-card diff report catch changed or missing values. |
+| HDFC MF blocks scripted requests | 1, 2 | Manual save with `fetch: manual`, keeping the official URL for citations. |
+| HDFC MF changes page layout, link labels or PDF URLs | 2, 3 | PDFs found by link text, not stored URLs. Sanity check per fetch. Verbatim-quote check and the fact-card diff report catch changed or missing values. |
+| Content-use terms (personal, non-commercial only) | 7 | No public deployment without HDFC AMC's written permission. |
 | Table parsing errors in exit-load or expense-ratio tables | 2, 3 | Verbatim-quote check and human review of every card. |
 | Intent rules refuse too many factual questions | 4A, 6 | Measure false refusals in the eval and adjust the rules. |
 | Groq retires or changes the chosen model | 4C, 6 | The model ID is config. Re-run the generation and golden-set evals after any model change. The client sits behind an interface, so changes stay local. |

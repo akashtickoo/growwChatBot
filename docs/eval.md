@@ -4,7 +4,7 @@
 
 This document defines how every phase in [implementation-plan.md](implementation-plan.md) is evaluated, and how the finished system is evaluated end to end. It builds on [architecture.md](architecture.md), [edge-case.md](edge-case.md) and the requirements in [problemStatement.md](problemStatement.md).
 
-The corpus is the 7 Groww scheme pages (implementation plan, Phase 1).
+The corpus is official HDFC MF sources: the 7 Direct-plan scheme pages, the SID, KIM and Fund Facts PDFs they link to, and three statement pages (architecture D1).
 
 ---
 
@@ -21,7 +21,7 @@ The corpus is the 7 Groww scheme pages (implementation plan, Phase 1).
 |---|---|
 | **PASS** | Every check met its threshold. |
 | **FAIL** | At least one check missed its threshold. Fix and re-run. |
-| **BLOCKED** | A check could not run for reasons outside the system (e.g. Groww unreachable). Not counted as a pass or a failure. Re-run when unblocked. |
+| **BLOCKED** | A check could not run for reasons outside the system (e.g. a source site unreachable). Not counted as a pass or a failure. Re-run when unblocked. |
 
 **Evidence**
 
@@ -37,8 +37,8 @@ The corpus is the 7 Groww scheme pages (implementation plan, Phase 1).
 | Phase | What is evaluated | Main method | Gate threshold (headline) |
 |---|---|---|---|
 | 0 | Project runs | Commands and smoke test | All checks pass |
-| 1 | Corpus is exactly the 7 pages and facts are reachable | Manifest test, source check, coverage matrix, human spot-check | 7/7 URLs valid; 49/49 matrix cells filled; spot-check 10/10 |
-| 2 | Ingestion builds a correct, stable index | Ingestion tests, run report, chunk audit | 100% chunks tagged; 0 peer-fund leaks; stable hashes |
+| 1 | Corpus is official HDFC MF sources only and every fact has a source | Manifest tests, source check, coverage matrix, human spot-check | All sources pass `check_sources`; 49/49 matrix cells filled; spot-check 10/10 |
+| 2 | Ingestion builds a correct, stable index | Ingestion tests, run report, chunk audit | 100% chunks tagged; 0 returns or suitability text in chunks; stable hashes |
 | 3 | Fact cards match the pages | Extraction vs independent human labels | 100% of indexed cards reviewed and correct |
 | 4A | Guards classify inputs correctly | Labeled guard set | PII recall 100%; not-covered misroutes 0; false refusals ≤ 5% |
 | 4B | Retrieval finds the right passage | Labeled retrieval set | Recall@5 ≥ 95%; cross-scheme leaks 0 |
@@ -69,11 +69,11 @@ The corpus is the 7 Groww scheme pages (implementation plan, Phase 1).
 
 | ID | Check | Method | Pass |
 |---|---|---|---|
-| EV-1-01 | Manifest holds exactly the 7 URLs | Manifest test compares `sources.yaml` with the Phase 1 table | Exact match, no extras |
-| EV-1-02 | Only `groww.in` allowed | Manifest test | `allowed_domains == ["groww.in"]` |
+| EV-1-01 | Each scheme's official Direct-plan page is listed, and Groww URLs are identifiers only | Manifest tests compare `schemes.yaml` and `sources.yaml` with the Phase 1 table | Exact match; no Groww URL as a source |
+| EV-1-02 | Only HDFC MF hosts allowed | Manifest test | `allowed_domains` ⊆ {`www.hdfcfund.com`, `files.hdfcfund.com`}; education links on SEBI/AMFI hosts |
 | EV-1-03 | Every URL reachable | `python -m ingestion.check_sources` | 7/7 return HTTP 200 and HTML |
 | EV-1-04 | Fetching permitted | robots.txt and terms of use checked and recorded | Recorded "allowed", or manual mode chosen for all pages |
-| EV-1-05 | Facts present in fetched HTML | For each page, search the saved raw HTML for each fact found on the live page | Result recorded per page. If any fact is missing, the JavaScript fallback is planned before Phase 2 |
+| EV-1-05 | Facts present in fetched HTML | For each page, search the saved raw HTML for each fact found on the live page | Result recorded per page. If any fact is missing, a fallback is planned before Phase 2 |
 | EV-1-06 | Coverage matrix complete | Script counts cells in `docs/coverage-matrix.md` | 49/49 cells hold a page section or "not on page" |
 | EV-1-07 | Coverage matrix is correct | A second person checks 10 random cells against the live pages | 10/10 agree |
 | EV-1-08 | Decisions recorded | Checklist: Phase 1 "Effects to record" and the 12 decisions in [edge-case.md](edge-case.md) §18 | All recorded in `architecture.md` |
@@ -94,8 +94,8 @@ The corpus is the 7 Groww scheme pages (implementation plan, Phase 1).
 | EV-2-03 | Hash ignores noise (EC-ING-03) | Fixture pair differing only in NAV and timestamps | Same hash |
 | EV-2-04 | Hash detects real changes | Fixture pair differing in exit load text | Different hash |
 | EV-2-05 | Soft blocks detected (EC-ING-01) | Captcha, "access denied" and empty-shell fixtures | Each recorded as a failed fetch; last good version kept |
-| EV-2-06 | Allowlist enforced | Non-Groww URL and off-site redirect fixtures | Both rejected |
-| EV-2-07 | Peer-fund sections stripped (EC-RET-06) | Scan all chunks for names of other funds (list built from the stripped sections and common AMC names) | 0 matches |
+| EV-2-06 | Allowlist enforced | Non-HDFC MF URL (including a Groww URL) and off-site redirect fixtures | Both rejected |
+| EV-2-07 | Returns and suitability sections stripped (EC-RET-06) | Scan all chunks for "since inception", "Value of Investment of Rs", "Ideal for", "suitable for investors", "Benchmark Returns", "past performance", "CAGR". ("value of investment" alone also appears in official risk disclosures, which are fine.) | 0 matches |
 | EV-2-08 | Every chunk tagged | Chunk audit script | 100% have `scheme_id`, `doc_id`, `source_url`; `scheme_id` matches the page |
 | EV-2-09 | Context header present | Chunk audit script | 100% of chunks start with `[Scheme \| Doc type \| Section]` |
 | EV-2-10 | Chunk sizes sane | Chunk audit: token-length distribution | 0 empty chunks; 0 chunks over 600 tokens; report min / median / max |
@@ -297,7 +297,7 @@ The main evaluation. It runs the real pipeline entry point (`app.pipeline`) with
   expected_field: exit_load
   accept: ["1% if redeemed within 1 year"]     # any normalized match passes
   must_not_contain: ["recommend", "you should", "return of"]
-  expected_citation: groww-hdfc-mid-cap
+  expected_citation: hdfc-mid-cap-page
   edge_case_ref: null                           # e.g. EC-INT-02
   label_source: human                           # never model output
   verified_on: 2026-11-11
@@ -344,7 +344,7 @@ Each case is scored on separate properties rather than one blended score.
 | Entry point | Calls `app.pipeline` exactly as the API does |
 | Reps | `--reps 1` for quick tuning runs; `--reps 3` for release runs. Template-only cases (PII, rule refusals) are deterministic and run once |
 | Per-case record | Question, retrieved chunk IDs, model request and response, validator results, retries, final response, `finish_reason`, served model, tokens, latency, attempt count. Saved to `data/reports/eval_<date>/results.jsonl` |
-| Infra failures | Timeouts, API errors after retries, and a Groww citation check that can't connect go to `errors.jsonl` with a failure type. They are **not** scored as model failures. If more than 2% of attempts fail this way, the run is marked incomplete and those cases are re-run |
+| Infra failures | Timeouts, API errors after retries, and a citation check that can't reach the source site go to `errors.jsonl` with a failure type. They are **not** scored as model failures. If more than 2% of attempts fail this way, the run is marked incomplete and those cases are re-run |
 | Truncation | A response cut off at the token limit (`finish_reason: length`) is recorded as `status: truncated` and shown separately |
 | Model declines | An empty answer, or one where the model declines to respond, is counted as its own metric, not mixed into accuracy |
 | Rate limits | Runner is throttled to stay under Groq's limits. Waits are recorded separately from latency. A `429` that survives retries goes to `errors.jsonl` |
@@ -482,7 +482,7 @@ How each problem-statement success criterion and constraint is measured.
 | Correct refusal of advisory questions | Advisory refusal recall, false refusals, refusal template review |
 | Clean, minimal, user-friendly interface | EV-5-04 to EV-5-09 |
 | At most 3 sentences, exactly one link, footer | Format compliance, EV-4C-04, EV-4C-12 |
-| Agreed sources only (the 7 Groww pages, architecture D1) | EV-1-01, EV-1-02, EV-2-06, citation validity |
+| Official sources only (HDFC MF; AMFI and SEBI as education links; no aggregators) | EV-1-01, EV-1-02, EV-2-06, citation validity |
 | No PAN, Aadhaar, account numbers, OTPs, email, phone | EV-4A-01, EV-4A-02, EV-5-02, PII forwarded or logged = 0 |
 | No performance comparisons or return calculations | Performance cases redirected, `no_advice` judge, validator return-figure check (EV-4C-01) |
 | README and disclaimer deliverables | EV-7-01, EV-7-02, EV-5-04 |

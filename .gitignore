@@ -3,6 +3,7 @@
 
 # Generated data (page content, indexes, reports)
 data/raw/
+data/processed/
 data/index/
 data/reports/
 data/registry.sqlite
