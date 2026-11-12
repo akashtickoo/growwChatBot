@@ -1,0 +1,233 @@
+# Phase 4C validator set (eval.md §9.1). Run with: python -m eval.run_validator
+#
+# Hand-written model outputs, each paired with the source chunk it cites. All text is made up.
+#   source:    the cited chunk's text (its id is "c1"; a second chunk "c2" is also given)
+#   as_of:     the cited document's as-of date (metadata, not chunk text)
+#   question:  optional; numbers the user wrote count as grounded
+#   source_id: optional; defaults to "c1"
+#   expect:    pass, or the list of checks that must fail
+#
+# EV-4C-01: no bad output accepted. EV-4C-02: at most 5% of good outputs rejected.
+
+good:
+  - id: g01-ter
+    source: "Total expense ratio (TER): 0.74%, including additional expenses and GST on management fees."
+    answer: "The expense ratio of HDFC Mid Cap Fund – Direct Growth is 0.74%, including additional expenses and GST on management fees."
+  - id: g02-exit-load-slab
+    source: "Exit Load: 1.00% if units are redeemed within 1 year from the date of allotment. No exit load is payable after 1 year."
+    answer: "HDFC Small Cap Fund charges an exit load of 1.00% if units are redeemed within 1 year from allotment. No exit load applies after 1 year."
+  - id: g03-percent-normalized
+    source: "Exit Load: 1.00% if redeemed within 1 year."
+    answer: "The exit load is 1% if redeemed within 1 year."
+  - id: g04-rupee-forms
+    source: "Minimum SIP amount: ₹100."
+    answer: "The minimum SIP amount for HDFC Large Cap Fund is Rs. 100."
+  - id: g05-rupee-comma
+    source: "Minimum application amount: Rs. 5,000 and any amount thereafter."
+    answer: "The minimum application amount is ₹5000 and any amount thereafter."
+  - id: g06-rs-slash
+    source: "Purchase (including switch-in): ₹100/- and any amount thereafter."
+    answer: "The minimum purchase amount for HDFC Multi Cap Fund is ₹100 and any amount thereafter."
+  - id: g07-lock-in
+    source: "Lock-in period: 3 years."
+    answer: "HDFC ELSS Tax Saver Fund has a lock-in period of 3 years."
+  - id: g08-riskometer
+    source: "Riskometer: Very High."
+    answer: "The riskometer of HDFC Silver ETF Fund of Fund is Very High."
+  - id: g09-benchmark-number-in-name
+    source: "Benchmark: NIFTY Midcap 150 Index (Total Returns Index)."
+    answer: "HDFC Mid Cap Fund is benchmarked against the NIFTY Midcap 150 Index (Total Returns Index)."
+  - id: g10-as-of-metadata
+    source: "Investment Objective: To provide long-term capital appreciation by investing predominantly in mid-cap companies."
+    as_of: "2025-11-21"
+    answer: "As per the KIM dated 21 November 2025, the objective is long-term capital appreciation by investing predominantly in mid-cap companies."
+  - id: g11-as-of-numeric
+    source: "Investment Objective: To generate long-term capital appreciation."
+    as_of: "2025-11-21"
+    answer: "As of 21/11/2025, the investment objective is to generate long-term capital appreciation."
+  - id: g12-question-number
+    question: "Is there an exit load if I redeem after 6 months?"
+    source: "Exit Load: 1.00% if redeemed within 1 year from the date of allotment."
+    answer: "Yes, redeeming after 6 months is within 1 year, so an exit load of 1.00% applies."
+  - id: g13-abbreviations
+    source: "Minimum additional purchase: Rs. 100 and in multiples of Re. 1 thereafter."
+    answer: "The minimum additional purchase is Rs. 100, i.e. in multiples of Re. 1 thereafter."
+  - id: g14-three-sentences
+    source: "Exit Load: 1.00% within 1 year. Minimum SIP amount: ₹100. Riskometer: Very High."
+    answer: "The exit load is 1.00% within 1 year. The minimum SIP amount is ₹100. The riskometer is Very High."
+  - id: g15-better-liquidity
+    source: "Units are listed on the exchange to provide better liquidity to investors."
+    answer: "The units are listed on the exchange to provide better liquidity to investors."
+  - id: g16-no-numbers
+    source: "Fund Managers: Mr. Alpha (since June 2020) and Ms. Beta."
+    answer: "HDFC Mid Cap Fund is managed by Mr. Alpha and Ms. Beta."
+  - id: g17-manager-since
+    source: "Fund Managers: Mr. Alpha (since June 2020) and Ms. Beta."
+    answer: "Mr. Alpha has managed HDFC Mid Cap Fund since June 2020."
+  - id: g18-decimal-trailing-zero
+    source: "Total expense ratio (TER): 0.50%."
+    answer: "The expense ratio is 0.5%."
+  - id: g19-statement-process
+    source: "Use your PAN and email ID registered with your investments to request a consolidated capital gains report."
+    answer: "You can request a consolidated capital gains report using the PAN and email ID registered with your investments."
+  - id: g20-statement-free
+    source: "No, most RTAs and platforms offer the capital gain statement free of cost."
+    answer: "Most RTAs and platforms offer the capital gain statement free of cost."
+  - id: g21-approx
+    source: "The scheme will invest approx. 95% in units of the underlying ETF."
+    answer: "The scheme invests approx. 95% in units of the underlying ETF."
+  - id: g22-asset-allocation-range
+    source: "Equity and equity related instruments of mid cap companies: 65% to 100%. Other equity: 0% to 35%."
+    answer: "HDFC Mid Cap Fund invests 65% to 100% in equity of mid cap companies and 0% to 35% in other equity."
+  - id: g23-cut-off-time
+    source: "In respect of valid applications received up to 3.00 p.m., the closing NAV of the day shall be applicable."
+    answer: "For valid applications received up to 3.00 p.m., the closing NAV of that day applies."
+  - id: g24-stamp-duty
+    source: "A stamp duty of 0.005% of the transaction value is levied on purchases."
+    answer: "A stamp duty of 0.005% of the transaction value is charged on purchases."
+  - id: g25-no-lock-in-stated
+    source: "Lock-in period: Nil."
+    answer: "HDFC Large Cap Fund has no lock-in period."
+  - id: g26-name-with-number
+    source: "HDFC Large Cap Fund (formerly known as HDFC Top 100 Fund) is an open ended equity scheme."
+    answer: "HDFC Large Cap Fund was formerly known as HDFC Top 100 Fund."
+  - id: g27-ltd
+    source: "Trustee: HDFC Trustee Company Ltd. Asset Management Company: HDFC Asset Management Company Ltd."
+    answer: "The trustee is HDFC Trustee Company Ltd. and the AMC is HDFC Asset Management Company Ltd."
+  - id: g28-ter-dated-in-source
+    source: "Total expense ratio as on 31 October 2026: 0.79%."
+    answer: "As on 31 October 2026, the expense ratio of HDFC Small Cap Fund is 0.79%."
+  - id: g29-sip-dates
+    source: "SIP can be registered for any date from 1st to 28th of the month."
+    answer: "A SIP can be registered for any date from the 1st to the 28th of the month."
+  - id: g30-second-chunk-cited
+    source_id: c2
+    source: "Riskometer: Very High."
+    second: "Minimum SIP amount: ₹500."
+    answer: "The minimum SIP amount is ₹500."
+
+bad:
+  - id: b01-four-sentences
+    source: "Exit Load: 1.00% within 1 year. Minimum SIP amount: ₹100. Riskometer: Very High. Lock-in: Nil."
+    answer: "The exit load is 1.00% within 1 year. The minimum SIP is ₹100. The riskometer is Very High. There is no lock-in."
+    expect: [length]
+  - id: b02-bullets
+    source: "Exit Load: 1.00% within 1 year. Minimum SIP amount: ₹100."
+    answer: "- Exit load: 1.00% within 1 year\n- Minimum SIP: ₹100\n- Both apply to the Direct plan\n- See the page"
+    expect: [length]
+  - id: b03-url
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is 0.74%, see https://www.hdfcfund.com for details."
+    expect: [link]
+  - id: b04-www
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is 0.74% as listed on www.hdfcfund.com."
+    expect: [link]
+  - id: b05-markdown-link
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is 0.74% ([source](page))."
+    expect: [link]
+  - id: b06-wrong-number
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio of HDFC Mid Cap Fund is 0.76%."
+    expect: [grounding]
+  - id: b07-converted-units
+    source: "Exit Load: 1.00% if redeemed within 1 year."
+    answer: "The exit load is 1.00% if redeemed within 12 months."
+    expect: [grounding]
+  - id: b08-invented-date
+    source: "Riskometer: Very High."
+    as_of: "2025-11-21"
+    answer: "As of 31 October 2026, the riskometer is Very High."
+    expect: [grounding]
+  - id: b09-invented-amount
+    source: "Minimum SIP amount: ₹100."
+    answer: "The minimum SIP amount is ₹100, and the minimum lump sum is ₹5,000."
+    expect: [grounding]
+  - id: b10-should-invest
+    source: "Riskometer: Very High."
+    answer: "The riskometer is Very High, so you should invest only for the long term."
+    expect: [advice]
+  - id: b11-recommend
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is 0.74%, and I recommend this fund for its low cost."
+    expect: [advice]
+  - id: b12-good-choice
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "At 0.74%, the expense ratio makes it a good choice."
+    expect: [advice]
+  - id: b13-better-than
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "Its expense ratio of 0.74% is better than most mid cap funds."
+    expect: [advice]
+  - id: b14-returns-of
+    source: "The scheme has delivered returns of 18.5% since launch."
+    answer: "HDFC Mid Cap Fund has delivered returns of 18.5% since launch."
+    expect: [returns]
+  - id: b15-percent-returns
+    source: "1 year: 12.3% returns."
+    answer: "The scheme gave 12.3% returns in 1 year."
+    expect: [returns]
+  - id: b16-cagr
+    source: "5 year CAGR: 21.4%."
+    answer: "The 5 year CAGR is 21.4%."
+    expect: [returns]
+  - id: b17-wrong-source
+    source_id: c9
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is 0.74%."
+    expect: [source]
+  - id: b18-empty-source
+    source_id: ""
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is 0.74%."
+    expect: [source]
+  - id: b19-empty-answer
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "   "
+    expect: [empty]
+  - id: b20-hindi
+    source: "Lock-in period: 3 years."
+    answer: "इस योजना की लॉक-इन अवधि 3 वर्ष है।"
+    expect: [language]
+  - id: b21-number-from-other-chunk
+    source: "Riskometer: Very High."
+    second: "Minimum SIP amount: ₹500."
+    answer: "The riskometer is Very High and the minimum SIP is ₹500."
+    expect: [grounding]
+  - id: b22-rounded
+    source: "Total expense ratio (TER): 0.74%."
+    answer: "The expense ratio is about 0.7%."
+    expect: [grounding]
+  - id: b23-xirr
+    source: "SIP XIRR since inception: 19.2%."
+    answer: "The SIP XIRR since inception is 19.2%."
+    expect: [returns]
+  - id: b24-line-breaks
+    source: "Exit Load: 1.00% within 1 year. Minimum SIP amount: ₹100."
+    answer: "Exit load: 1.00% within 1 year\nMinimum SIP: ₹100\nRiskometer: see page\nLock-in: none"
+    expect: [length]
+  - id: b25-suitable-for-you
+    source: "Riskometer: Very High."
+    answer: "The riskometer is Very High, so it is suitable for you if you are aggressive."
+    expect: [advice]
+  - id: b26-annualised
+    source: "Annualised returns over 3 years: 15%."
+    answer: "The annualised returns over 3 years are 15%."
+    expect: [returns]
+  - id: b27-link-and-length
+    source: "Exit Load: 1.00% within 1 year."
+    answer: "Exit load is 1.00%. It applies within 1 year. Nothing after. More at http://example.com."
+    expect: [length, link]
+  - id: b28-invented-percentage
+    source: "Exit Load: 1.00% within 1 year."
+    answer: "The exit load is 1.00% within 1 year and 0.50% within 2 years."
+    expect: [grounding]
+  - id: b29-we-suggest
+    source: "Minimum SIP amount: ₹100."
+    answer: "The minimum SIP is ₹100, and we suggest starting with that."
+    expect: [advice]
+  - id: b30-worth-investing
+    source: "Riskometer: Very High."
+    answer: "The riskometer is Very High, but the fund is worth investing in."
+    expect: [advice]

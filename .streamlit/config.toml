@@ -1,0 +1,23 @@
+# Streamlit settings for local runs and Streamlit Community Cloud.
+
+[browser]
+# No usage statistics: the app keeps no analytics (architecture §10).
+gatherUsageStats = false
+
+[client]
+# Never show tracebacks to users; errors are logged by type only.
+showErrorDetails = "none"
+toolbarMode = "viewer"
+
+[server]
+headless = true
+runOnSave = false
+
+[runner]
+# Finish the current answer before handling the next click or message, so a second
+# interaction can't cut off an answer that is still being generated.
+fastReruns = false
+
+[theme]
+base = "light"
+primaryColor = "#0b4f9c"

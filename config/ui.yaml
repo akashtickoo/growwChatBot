@@ -1,0 +1,14 @@
+# Page content served by GET /api/meta (architecture §7, §8), so the UI hard-codes nothing.
+# The example questions were chosen in Phase 1 so each has an official source.
+
+title: HDFC Mutual Fund FAQ Assistant
+disclaimer: "Facts-only. No investment advice."
+welcome: >-
+  Hi! Ask me factual questions about 7 HDFC Mutual Fund schemes: expense ratio, exit load,
+  minimum SIP, lock-in, riskometer, benchmark, and statements.
+examples:
+  - What is the expense ratio of HDFC Mid Cap Fund?
+  - What is the lock-in period of HDFC ELSS Tax Saver?
+  - How do I get my capital gains statement?
+pii_hint: Please don't enter PAN, Aadhaar, account numbers, OTPs, phone numbers or email addresses.
+max_message_chars: 500

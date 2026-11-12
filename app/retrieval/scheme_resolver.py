@@ -185,6 +185,12 @@ def _aliases(scheme: Scheme) -> list[str]:
     return sorted({normalize(a) for a in names}, key=len, reverse=True)
 
 
+def scheme_names(scheme_id: str) -> list[str]:
+    """Normalized names and aliases of a corpus scheme, longest first (used by retrieval)."""
+    scheme = next((s for s in _schemes() if s.id == scheme_id), None)
+    return _aliases(scheme) if scheme else []
+
+
 def _contains(text: str, phrase: str) -> bool:
     return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None
 

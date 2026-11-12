@@ -16,3 +16,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+
+# Streamlit secrets (use .streamlit/secrets.toml.example as the template)
+.streamlit/secrets.toml

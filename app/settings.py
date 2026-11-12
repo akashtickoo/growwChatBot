@@ -27,9 +27,10 @@ class Settings(BaseSettings):
     app_env: Literal["development", "production"] = "development"
     index_dir: Path = Path("data/index")
     retrieval_top_k: int = Field(default=5, ge=1)
-    min_similarity: float = Field(default=0.45, ge=0.0, le=1.0)
+    min_similarity: float = Field(default=0.63, ge=0.0, le=1.0)
     request_timeout_s: float = Field(default=20.0, gt=0)
-    rate_limit: str = "20/minute"
+    rate_limit: str = "20/minute"  # per client (API) or browser session (Streamlit)
+    global_rate_limit: str = "60/minute"  # whole Streamlit process; protects the Groq quota
     display_timezone: str = "Asia/Kolkata"
     stale_source_days: int = Field(default=14, ge=1)
     debug_log_queries: bool = False

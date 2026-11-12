@@ -62,7 +62,7 @@ This document lists corner cases for the assistant described in [architecture.md
 | EC-PII-11 | The word "PAN" with no number: *"Do I need a PAN to invest?"* | Not PII. Continues as a normal question (likely `not_found`, since the corpus doesn't cover KYC). | PII guard | U |
 | EC-PII-12 | Numbers that must pass: *"₹5,000"*, *"2026-10-31"*, *"0.75%"*, *"3 years"*, an ISIN *"INF179K01XXX"*, a 6-digit scheme code | Not blocked. | PII guard | U |
 | EC-PII-13 | Large amount: *"₹1000000000"* or *"100000000 rupees"* | **Gap.** A 9–18 digit run matches the account-number pattern. Numbers next to "₹", "Rs", "rupees", "lakh" or "crore" must be excluded. | PII guard | U |
-| EC-PII-14 | Client-side PII warning bypassed (direct API call) | The server guard still blocks. | API | A |
+| EC-PII-14 | No client-side PII warning (Streamlit has no browser-side check) or a direct API call | The pipeline's guard blocks it; the UI never stores or shows back the message. | Pipeline, UI | A, U |
 | EC-PII-15 | Invalid request that contains PII (e.g. 600 characters including a PAN) | **Gap.** FastAPI's default `422` response echoes the input. Use a custom validation error handler that returns field names only. | API | A |
 | EC-PII-16 | An exception while handling a message | Error logs contain `request_id` and the error type only, never the request body. | Logging | U |
 | EC-PII-17 | Retrieved page text contains a public helpline number or email | Allowed. The PII rule covers user input, not public source content. | Validator | P |
@@ -233,17 +233,17 @@ This document lists corner cases for the assistant described in [architecture.md
 
 | ID | Scenario | Expected behavior | Where | Test |
 |---|---|---|---|---|
-| EC-UI-01 | Double-click Send or press Enter twice | One request. Send is disabled while waiting. | UI | M |
-| EC-UI-02 | Example chip clicked while a request is pending | Ignored until the current answer arrives. | UI | M |
-| EC-UI-03 | Long words or URLs on a 375 px screen | Text wraps. No sideways scrolling. | UI | M |
-| EC-UI-04 | Network offline | Friendly error. The typed question stays in the box. | UI | M |
-| EC-UI-05 | Answer text containing `<`, `>` or `&` | Shown as text (`textContent`). | UI | M |
-| EC-UI-06 | Citation URL that isn't `http(s)` | Not shown as a link (extra safety; citations come from the registry). | UI | M |
-| EC-UI-07 | User ignores the PII warning and sends | Server returns `pii_blocked`. | UI, PII guard | M |
-| EC-UI-08 | Page reload | History is cleared (by design). | UI | M |
-| EC-UI-09 | Screen reader or keyboard-only use | New answers announced through `aria-live`. Everything reachable by keyboard. | UI | M |
-| EC-UI-10 | Disclaimer visibility | Visible at every scroll position, including on phones with the keyboard open. | UI | M |
-| EC-UI-11 | JavaScript disabled | A notice says JavaScript is required. | UI | M |
+| EC-UI-01 | Double-click an example or press Enter twice | One answer: a repeat of the same question within 3 s is ignored, and `runner.fastReruns = false` finishes the current answer first. | UI | U, M |
+| EC-UI-02 | Example clicked while an answer is being generated | Handled after the current answer finishes (`fastReruns` off). | UI | M |
+| EC-UI-03 | Long words or URLs on a 375 px screen | Streamlit wraps text. No sideways scrolling. | UI | M |
+| EC-UI-04 | Connection lost | Streamlit shows its reconnecting notice; the session resumes when the connection returns. | UI | M |
+| EC-UI-05 | Answer text containing `<`, `>`, `&`, Markdown or `$` | Shown literally: answer text is escaped before `st.markdown`. | UI | U |
+| EC-UI-06 | Citation URL that isn't `http(s)` | Not shown as a link (extra safety; citations come from the registry). | UI | U |
+| EC-UI-07 | User sends a message with personal details | `pii_blocked` reply; the history shows a placeholder, never the message. | UI, PII guard | U |
+| EC-UI-08 | Page reload | History is cleared (session memory only), as is "Clear conversation". | UI | U, M |
+| EC-UI-09 | Screen reader or keyboard-only use | Streamlit's chat input and buttons are labelled and keyboard-reachable. Checked manually with an accessibility scan. | UI | M |
+| EC-UI-10 | Disclaimer visibility | At the top in a sticky container and in the sidebar. | UI | M |
+| EC-UI-11 | JavaScript disabled | Streamlit needs JavaScript and shows its own notice. | UI | M |
 
 ---
 
@@ -297,7 +297,7 @@ This document lists corner cases for the assistant described in [architecture.md
 | ID | Scenario | Expected behavior | Where | Test |
 |---|---|---|---|---|
 | EC-SEC-01 | URL in the question: *"Summarize https://example.com"* | The URL is never fetched. `out_of_scope`. | Pipeline | U |
-| EC-SEC-02 | Script content in a source page | Rendered as text, and blocked by the Content Security Policy. | UI | M |
+| EC-SEC-02 | Script or Markdown in a source page or answer | Rendered as text: answers are escaped, and Streamlit never runs HTML from `st.markdown` without `unsafe_allow_html` (used only for the app's own static CSS). | UI | U |
 | EC-SEC-03 | User tries to override the rules | System prompt rules and the validator hold (see EC-INT-12, EC-LLM-11). | LLM step | E |
 | EC-SEC-04 | Flood of requests to run up API cost | Rate limit and input cap. Optional daily spend cap on the API key. | API | A |
 | EC-SEC-05 | API key appearing in logs or errors | Never logged. Settings hide it when printed. | Settings | U |

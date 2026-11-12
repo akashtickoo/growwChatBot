@@ -79,6 +79,8 @@ A simple interface with:
 - Three example questions
 - A visible disclaimer: **"Facts-only. No investment advice."**
 
+**Implementation note (13 Nov 2026):** built as a Streamlit app, deployed privately on Streamlit Community Cloud ([architecture.md](architecture.md) D12, §8, §16).
+
 ## Constraints
 
 ### Data and Sources

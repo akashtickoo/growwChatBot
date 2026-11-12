@@ -200,7 +200,7 @@ Run with `python -m eval.run_retrieval`. Deterministic, one run.
 | EV-4B-05 | Off-topic questions below `MIN_SIMILARITY` | ≥ 90% |
 | EV-4B-06 | Retrieval latency | p95 < 150 ms |
 
-**Threshold choice:** sweep `MIN_SIMILARITY` from 0.30 to 0.70 in steps of 0.05. Record EV-4B-04 and EV-4B-05 at each step in a table, and pick the value that meets both. Also report MRR for information.
+**Threshold choice:** sweep `MIN_SIMILARITY` from 0.30 to 0.70 in steps of 0.05. Record EV-4B-04 and EV-4B-05 at each step in a table, and pick the value that meets both. Also report MRR for information. The runner also prints the lowest answerable and highest off-topic similarity; when the 0.05 steps are too coarse, take the midpoint of that gap. Phase 4B chose 0.63 this way (gap 0.614–0.646).
 
 ---
 
@@ -242,19 +242,22 @@ About 50 questions, each given its gold passages directly, skipping retrieval. R
 
 ---
 
-## 10. Phase 5: API and User Interface
+## 10. Phase 5: Streamlit UI and API
+
+The UI is a Streamlit app (architecture D12). Automated UI checks use Streamlit's `AppTest`, which runs the page headless; visual checks stay manual.
 
 | ID | Check | Method | Pass |
 |---|---|---|---|
 | EV-5-01 | API contract | `TestClient` tests for each endpoint and error code | All pass |
-| EV-5-02 | No input echo (EC-PII-15) | Send invalid requests containing fake PII | PII string absent from every response and log |
-| EV-5-03 | Rate limit | Exceed `RATE_LIMIT` | `429` with `Retry-After` |
-| EV-5-04 | UI requirements | Manual checklist from the plan: welcome message, 3 example questions, disclaimer always visible | All present |
-| EV-5-05 | Answer rendering | Each response type shown correctly, links open in a new tab, HTML shown as text | All correct |
-| EV-5-06 | Accessibility | Lighthouse or axe scan, plus keyboard-only run | No critical issues; Lighthouse accessibility score ≥ 90 |
+| EV-5-02 | No input echo (EC-PII-15) | Invalid API requests and UI messages containing fake PII | PII string absent from every response, the UI history and logs |
+| EV-5-03 | Rate limit | Exceed `RATE_LIMIT` (API: `429` with `Retry-After`; UI: per-session wait message) | Both enforced |
+| EV-5-04 | UI requirements | `AppTest`: welcome message, 3 example questions, disclaimer; manual: disclaimer visible while scrolling | All present |
+| EV-5-05 | Answer rendering | `AppTest`: each response type with its link and footer; Markdown, HTML and LaTeX in answer text shown literally; only http(s) links | All correct |
+| EV-5-06 | Accessibility | Lighthouse or axe scan of the deployed app, plus a keyboard-only run | No critical issues |
 | EV-5-07 | Phone width | 375 px viewport | No sideways scroll; disclaimer visible |
-| EV-5-08 | End-to-end latency | 20 real questions through the UI's API | p95 ≤ 5 s |
+| EV-5-08 | End-to-end latency | 20 real questions, paced under the Groq key's token limit | p95 ≤ 5 s |
 | EV-5-09 | UI edge cases | EC-UI-01 to EC-UI-11 | All pass |
+| EV-5-10 | Fresh deployment | Start with an empty `data/`: reviewed cards imported, index built, pipeline loaded; a failed build still serves templates | All pass |
 
 ---
 

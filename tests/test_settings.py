@@ -22,7 +22,7 @@ def test_defaults_with_only_api_key(clean_env):
     assert s.app_env == "development"
     assert s.index_dir == Path("data/index")
     assert s.retrieval_top_k == 5
-    assert s.min_similarity == 0.45
+    assert s.min_similarity == 0.63
     assert s.request_timeout_s == 20
     assert s.rate_limit == "20/minute"
     assert s.display_timezone == "Asia/Kolkata"

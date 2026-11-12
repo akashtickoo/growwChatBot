@@ -12,6 +12,8 @@ How each phase is evaluated, and the system-level release targets, are defined i
 
 **LLM provider: Groq.** Answers and fact extraction use `openai/gpt-oss-120b` through the official `groq` Python SDK. On Groq this model supports strict JSON-schema output, which the answer step relies on (architecture D7).
 
+**UI and hosting: Streamlit** (architecture D12, decided 13 Nov 2026). The UI is a Streamlit app deployed on Streamlit Community Cloud as a private app. It replaces the static HTML page first built in Phase 5; the FastAPI JSON API stays for local use.
+
 ---
 
 ## Overview
@@ -25,11 +27,11 @@ How each phase is evaluated, and the system-level release targets, are defined i
 | 4A | Guards (PII, intent, scheme resolver) | 0 | 2–3 days |
 | 4B | Retrieval | 2, 3 | 1–2 days |
 | 4C | LLM step, validator, composer, pipeline | 4A, 4B | 2–3 days |
-| 5 | API and user interface | 4C (UI can start after 0) | 2 days |
+| 5 | API and Streamlit UI | 4C | 2 days |
 | 6 | Evaluation and tuning | 3, 5 | 2–3 days |
 | 7 | Docs, packaging and deployment | 6 | 1–2 days |
 
-\*Rough estimates for one developer, about 17–23 working days in total. Phase 4A and the UI part of Phase 5 can run in parallel with Phases 1–3.
+\*Rough estimates for one developer, about 17–23 working days in total. Phase 4A can run in parallel with Phases 1–3.
 
 ```mermaid
 flowchart LR
@@ -41,9 +43,7 @@ flowchart LR
     P3 --> P4B
     P4A --> P4C["4C. LLM + validator + composer"]
     P4B --> P4C
-    P0 -.-> P5UI["5. UI (against a stub API)"]
-    P4C --> P5["5. API"]
-    P5UI --> P5
+    P4C --> P5["5. API + Streamlit UI"]
     P5 --> P6["6. Evaluation"]
     P3 --> P6
     P6 --> P7["7. Docs + deploy"]
@@ -70,7 +70,7 @@ flowchart LR
 
 ### Tasks
 
-- [ ] Create `pyproject.toml` with the dependencies from §13: `fastapi`, `uvicorn`, `groq`, `sentence-transformers`, `chromadb`, `rank-bm25`, `rapidfuzz`, `httpx`, `trafilatura`, `beautifulsoup4`, `pymupdf`, `pdfplumber`, `pysbd`, `pydantic`, `pydantic-settings`, `slowapi`, `pyyaml`, `tzdata` (time zone data; Windows has none built in, and the footer needs Asia/Kolkata). Dev dependencies: `pytest`, `ruff`.
+- [ ] Create `pyproject.toml` with the dependencies from §13 (later changes: `trafilatura` removed in Phase 2's switch to BeautifulSoup, `streamlit` and a CPU-only `torch` source added for deployment): `fastapi`, `uvicorn`, `groq`, `sentence-transformers`, `chromadb`, `rank-bm25`, `rapidfuzz`, `httpx`, `trafilatura`, `beautifulsoup4`, `pymupdf`, `pdfplumber`, `pysbd`, `pydantic`, `pydantic-settings`, `slowapi`, `pyyaml`, `tzdata` (time zone data; Windows has none built in, and the footer needs Asia/Kolkata). Dev dependencies: `pytest`, `ruff`.
 - [ ] Create the folder skeleton from §14 (`app/`, `ingestion/`, `config/`, `data/`, `eval/`, `tests/`), with empty `__init__.py` files.
 - [ ] Add `.gitignore`: `.env`, `data/raw/`, `data/index/`, `data/reports/`, `data/registry.sqlite`, `__pycache__/`, `.venv/`.
 - [ ] Add `.env.example` with every variable in the configuration table below.
@@ -95,7 +95,7 @@ Same as architecture §15.
 | `APP_ENV` | `development` | `development` or `production` |
 | `INDEX_DIR` | `data/index` | Where index versions live |
 | `RETRIEVAL_TOP_K` | `5` | Chunks sent to the LLM |
-| `MIN_SIMILARITY` | `0.45` | Below this, return `not_found` (tuned in Phase 6) |
+| `MIN_SIMILARITY` | `0.63` | Below this, return `not_found` (set in Phase 4B from the threshold sweep; re-checked in Phase 6) |
 | `REQUEST_TIMEOUT_S` | `20` | Per-request time limit |
 | `RATE_LIMIT` | `20/minute` | Per-IP limit |
 | `DISPLAY_TIMEZONE` | `Asia/Kolkata` | Timezone for the footer date |
@@ -393,39 +393,49 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 ## Phase 4B: Retrieval
 
+**Status:** built on 13 Nov 2026. All EV-4B gates pass on `eval/retrieval_set.yaml` at `MIN_SIMILARITY` 0.63 (`python -m eval.run_retrieval`). See [eval-log.md](eval-log.md).
+
 **Goal:** hybrid search that returns the right chunks for a resolved scheme (§6.5).
 
 **Depends on:** Phases 2 and 3.
 
 ### Tasks
 
-- [ ] `app/retrieval/index_loader.py`: at startup, read the `current` pointer and load ChromaDB, BM25 and the embedding model. Expose the index version and build date for `/healthz`. A new index is picked up on restart.
-- [ ] `app/retrieval/hybrid.py`:
-  - [ ] Dense top 10 filtered by `scheme_id`.
-  - [ ] BM25 top 10 with the same filter.
-  - [ ] Reciprocal Rank Fusion with k = 60.
-  - [ ] Boost `FACT_CARD` chunks when a field was detected.
-  - [ ] Return the top 5, with the best dense similarity score.
-  - [ ] Return "nothing relevant" when the best similarity is below `MIN_SIMILARITY` (0.45 to start).
+- [x] `app/retrieval/index_loader.py`: at startup, read the `current` pointer and load ChromaDB, BM25 (one per scheme, plus one for the statement pages) and the embedding model. A missing, unreadable or inconsistent index raises `IndexUnavailable` (EC-RET-07). `/healthz` shows `index_version`, `index_built_at` and `chunk_count`. A new index is picked up on restart (EC-RET-08). The model is loaded at startup, so the first question doesn't wait about 6 s.
+- [x] `app/retrieval/hybrid.py`:
+  - [x] Dense top 10 filtered by `scheme_id` (statement pages when the question has no scheme).
+  - [x] BM25 top 10 with the same filter. Tokens drop common words ("the", "fund", "hdfc" …) and get light suffix stripping, so "manages" finds the "Fund Managers" section.
+  - [x] Reciprocal Rank Fusion with k = 60.
+  - [x] Boost `FACT_CARD` chunks when a field was detected: the scheme's card for each named field is added and ranked first (EC-RET-02).
+  - [x] Return the top 5, with the best dense similarity score.
+  - [x] Return "nothing relevant" (`relevant: false`) when the best similarity is below `MIN_SIMILARITY`.
+- [x] Found while tuning: cards for fields the question didn't name take at most one of the 5 slots. Cards are short, so they score well against any question about the scheme. Without this limit they filled up to 3 slots on "Who manages HDFC Mid Cap?".
+- [x] Found while tuning: the dense query has the scheme's name replaced by "the fund". Every chunk in a scheme's scope contains the name, so with it left in, an off-topic question that names a scheme ("Which colour is the HDFC Mid Cap logo?", 0.72) scored above real questions. With the name replaced, the lowest answerable question scores 0.646 and the highest off-topic one 0.614.
+- [x] `MIN_SIMILARITY` set to **0.63** (was 0.45), the midpoint of that gap. At 0.45, 70% of the off-topic questions passed. Phase 6 re-checks it on the golden set and the held-back questions. The margin is small (±0.016), so it is worth watching.
+- [x] Retrieval set `eval/retrieval_set.yaml`: 85 answerable questions (all 7 schemes, all 7 fields, fund managers, KIM topics, statement pages) with gold passages named by fact-card id, section or key phrase (never by fact value), plus 20 off-topic questions (4 of them name a scheme). Runner `eval/run_retrieval.py` reports EV-4B-01 to 06, MRR and the threshold sweep.
 
 ### Tests
 
-- [ ] Over a small fixture index: "exit load mid cap" returns the mid-cap fact card or page chunk in the top 3.
-- [ ] A question about one scheme never returns another scheme's chunks.
-- [ ] An unrelated question ("what is the weather") falls below the threshold.
+- [x] Over a small fixture index: "exit load mid cap" returns the mid-cap fact card or page chunk in the top 3 (the card is first).
+- [x] A question about one scheme never returns another scheme's chunks, even when both schemes have identical exit-load text.
+- [x] An unrelated question ("what is the weather") falls below the threshold.
+- [x] Also: an off-topic question naming a scheme isn't lifted by the name, the unrequested-card limit, two named fields both ranked first, stemming, a scheme with no chunks, missing and inconsistent indexes, and `/healthz` with and without an index. The fixture index uses a hashed bag-of-words fake embedder, so the tests need no model download.
 
 ### Deliverables
 
-- Retrieval module and tests.
+- [x] `app/retrieval/index_loader.py`, `app/retrieval/hybrid.py`, `/healthz` index fields in `app/main.py`, `tests/test_retrieval.py`.
+- [x] `eval/retrieval_set.yaml` and `eval/run_retrieval.py`.
 
 ### Exit criteria
 
-- Retrieval tests pass.
-- A manual check of 10 real questions shows a correct supporting chunk in the top 5 for each.
+- [x] Retrieval tests pass (193/193 in the suite).
+- [x] A manual check of 10 real questions not in the retrieval set shows a correct supporting chunk in the top 5 for each (10/10). One side finding: the Gold FoF KIM has a near-empty table chunk ("money market instruments)"), left over from table parsing. Harmless, but worth a look in Phase 6.
 
 ---
 
 ## Phase 4C: LLM Step, Validator, Composer and Pipeline
+
+**Status:** built on 13 Nov 2026. All tests, the validator set (EV-4C-01/02) and the generation set (EV-4C-03 to 09, 1 rep with the real model) pass, and the three example questions are answered correctly. Release runs should use 3 reps. See [eval-log.md](eval-log.md).
 
 **Goal:** the full question-to-answer pipeline (§6.6–6.8), testable without API cost.
 
@@ -435,113 +445,132 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 **LLM client (`app/llm/client.py`, `prompts.py`, `schemas.py`, §6.6)**
 
-- [ ] Groq client (`groq` SDK, `client.chat.completions.create`) with model from `GROQ_MODEL`, `reasoning_effort` from `LLM_REASONING_EFFORT` and the token limit from `LLM_MAX_TOKENS`.
-- [ ] Structured output: `response_format={"type": "json_schema", "json_schema": {"name": ..., "strict": True, "schema": ...}}` with the §6.6 schema. Strict mode uses constrained decoding, so the output always matches the schema. It requires every field to be listed in `required` and `additionalProperties: false`. Parse `message.content` with `json.loads` and validate it with the pydantic model.
-- [ ] Check `finish_reason` before using the content. `length` (cut off) or empty content counts as a failure: one retry, then `not_found`.
-- [ ] Handle SDK errors from most to least specific: rate limit (respect `retry-after`), timeout, other API status errors, connection errors. If `GROQ_FALLBACK_MODEL` is set, try it once after a rate limit or server error, and log which model served the answer. Otherwise return `503` to the caller.
-- [ ] Put the fixed system prompt from §6.6 in `prompts.py`. Build the `<sources>` block with XML-escaped chunk text.
-- [ ] Define the client behind a small interface so tests can pass in a fake.
+- [x] Groq client (`groq` SDK, `client.chat.completions.create`) with model from `GROQ_MODEL`, `reasoning_effort` from `LLM_REASONING_EFFORT` and the token limit from `LLM_MAX_TOKENS`. `AnswerClient` sits on the Phase 3 `GroqJSONClient`, with `REQUEST_TIMEOUT_S` as the SDK timeout.
+- [x] Structured output: `response_format={"type": "json_schema", "json_schema": {"name": "faq_answer", "strict": True, "schema": ...}}`. "No source" is `""` rather than null, so the schema has plain types only. The reply is parsed with `json.loads` and validated with the pydantic model; a reply that doesn't match counts as bad output.
+- [x] `finish_reason` checked before using the content. `length` (cut off) or empty content counts as a failure: one retry, then `not_found`.
+- [x] SDK errors from most to least specific: rate limit (waits for `retry-after` once), timeout, other API status errors, connection errors. With `GROQ_FALLBACK_MODEL` set, it is tried once after a rate limit or server error, and the serving model is logged. Otherwise `ServiceUnavailable` (503 in Phase 5).
+- [x] Fixed system prompt in `prompts.py` (§6.6 draft plus "never infer a value the sources don't state" and "name the scheme"). The `<sources>` block has XML-escaped chunk text, with the chunk header moved into attributes.
+- [x] The client takes any `JSONCompleter`, so tests pass in a fake.
 
 **Validator (`app/guards/output_validator.py`, §6.7)**
 
-- [ ] Status handling, `source_id` membership, ≤ 3 sentences (`pysbd`), no links, number/percentage/date grounding against the cited chunk, advisory and return-figure phrase checks.
-- [ ] The grounding check also accepts the cited document's `doc_as_of` date, which is metadata rather than chunk text (EC-FLD-12).
-- [ ] Returns a list of failed checks, used in the retry message.
+- [x] Status handling, `source_id` membership, ≤ 3 sentences (`pysbd`, each line or bullet counts; "approx." protected), English, no links, number/percentage/date grounding against the cited chunk, advisory and return-figure phrase checks.
+- [x] Grounding also accepts the cited document's `doc_as_of` (chunk metadata and registry) and numbers from the user's question (EC-FLD-12).
+- [x] Returns a list of failed checks (code for the log, message for the retry).
 
 **Retry flow**
 
-- [ ] On validation failure, send one follow-up listing the failed checks. On a second failure, return `not_found`.
+- [x] On validation failure, one follow-up with the model's reply and the failed checks. On a second failure, `not_found`.
 
 **Templates and composer (`app/responses/`, `config/templates.yaml`, §6.8)**
 
-- [ ] Write the template texts. Each must be ≤ 3 sentences.
-- [ ] Composer builds `ChatResponse`. The citation URL and title come from the registry by `doc_id`. `last_updated` is that document's `fetched_at`.
-- [ ] Store times in UTC and show the footer date in Asia/Kolkata, formatted as `10 Nov 2026` (EC-CIT-03).
-- [ ] Add "not covered" wording to the `out_of_scope` template for Regular/IDCW plans and ETFs. It names the covered Direct Growth or FoF scheme and links its page (EC-SCH-05, EC-SCH-09).
-- [ ] `performance_redirect` links the scheme's Fund Facts PDF from the registry, or the Factsheets page for the two FoFs (architecture §2.1).
-- [ ] Education links come from `config/education_links.yaml`: SEBI for refusals and PII replies, AMFI for scope replies and `not_found` without a scheme.
+- [x] Template texts, each ≤ 3 sentences (tested).
+- [x] Composer builds `ChatResponse`. The citation URL and title come from the registry by `doc_id` (`RegistryDocuments`, read-only, per request). `last_updated` is that document's `fetched_at`.
+- [x] Times stored in UTC, footer date shown in Asia/Kolkata as `Last updated from sources: 11 Nov 2026` (EC-CIT-03, EC-CIT-09).
+- [x] "Not covered" wording for Regular/IDCW plans and ETFs names the covered Direct Growth or FoF scheme and links its page (EC-SCH-05, EC-SCH-09). Other fund houses and other HDFC schemes link AMFI.
+- [x] `performance_redirect` links the scheme's Fund Facts PDF from the registry, or the Factsheets page for the two FoFs and for questions without a scheme. NAV questions link the scheme page (EC-PERF-05).
+- [x] Education links from `config/education_links.yaml`: SEBI for refusals and PII replies, AMFI for scope replies and `not_found` without a scheme. Their footer date is the newest `fetched_at` in the registry (recorded in architecture §6.8).
 
 **Orchestrator (`app/pipeline.py`)**
 
-- [ ] Order: PII guard → intent rules → scheme resolver → retrieval → LLM → validator → composer.
-- [ ] Generate a `request_id`. Write one structured log line per request with the §10 fields and no raw question text.
+- [x] Order: PII guard → intent rules → scheme resolver → retrieval → LLM → validator → composer. Not-covered checks come before the performance redirect, so another fund's question never links an HDFC factsheet. An advisory question that names a fact field gets the "ask for the fact on its own" refusal (D5).
+- [x] Templates work without the index or the LLM; factual questions without them raise `ServiceUnavailable` (EC-RET-07, EC-LLM-12).
+- [x] A `request_id` per request and one JSON log line with the §10 fields (type, intent and rule, resolver, scheme, chunk ids, similarity, LLM status, attempts, failed checks, model, tokens, citation URL, latency). No question text; `DEBUG_LOG_QUERIES` adds it in development only and never for a PII message.
 
 **Developer CLI**
 
-- [ ] `python -m app.cli ask "<question>"` runs the full pipeline and prints the response and debug details (retrieved chunk IDs, validator result).
+- [x] `python -m app.cli ask "<question>"` runs the full pipeline and prints the response, Source line, footer and debug details (`--json` for the raw response).
 
 ### Tests (with a fake LLM)
 
-- [ ] Each LLM status: `answered`, `insufficient_context`, `advisory`, `out_of_scope`.
-- [ ] `source_id` not in the retrieved set → retry.
-- [ ] Four-sentence answer → retry → valid answer passes.
-- [ ] Answer with a number missing from the source → retry → second failure gives `not_found`.
-- [ ] `finish_reason: "length"` → retry → `not_found`.
-- [ ] Rate limit with `GROQ_FALLBACK_MODEL` set → answered by the fallback model, which is logged.
-- [ ] Every response type has the right citation rule (one link, or none for `clarify` / `greeting`) and the footer where required.
-- [ ] Log lines never contain the question text.
-- [ ] An answer whose only date is the document's as-of date passes grounding.
-- [ ] A fetch at 20:00 UTC shows the next day's India date in the footer.
+- [x] Each LLM status: `answered`, `insufficient_context`, `advisory`, `out_of_scope`.
+- [x] `source_id` not in the retrieved set → retry.
+- [x] Four-sentence answer → retry → valid answer passes.
+- [x] Answer with a number missing from the source → retry → second failure gives `not_found`.
+- [x] `finish_reason: "length"` → retry → `not_found`.
+- [x] Rate limit with `GROQ_FALLBACK_MODEL` set → answered by the fallback model, which is logged.
+- [x] Every response type has the right citation rule (one link, or none for `clarify` / `greeting`) and the footer where required.
+- [x] Log lines never contain the question text.
+- [x] An answer whose only date is the document's as-of date passes grounding.
+- [x] A fetch at 20:00 UTC shows the next day's India date in the footer.
+- [x] Also: PII never reaches retrieval or the LLM, schema-mismatched replies, the LLM being unavailable or not configured, no index, below-threshold `not_found` without an LLM call, the not-covered and performance links, mixed advisory questions, prompt escaping, and validator unit tests.
+- [x] Validator set `eval/validator_cases.yaml` (30 good, 30 bad hand-written outputs) with `eval/run_validator.py`, also run as a test.
+- [x] Generation set `eval/generation_set.yaml` (49 fact-card questions labeled from `eval/fact_labels.yaml`, 9 others) with `eval/run_generation.py`, which calls the real model with retrieval held fixed. First run (1 rep, 58 questions): correct value 100%, format 100%, grounding 100%, retry rate 0%, `not_found` on answerable 0%, 0 truncated, 826 tokens per call, p95 6.5 s. The p95 is above the ~1–3 s LLM budget in §11; worth watching in Phase 6.
 
 ### Deliverables
 
-- `app/llm/`, `app/guards/output_validator.py`, `app/responses/`, `app/pipeline.py`, `app/cli.py`, `config/templates.yaml` and tests.
+- [x] `app/llm/client.py`, `prompts.py`, `schemas.py`, `app/guards/output_validator.py`, `app/responses/composer.py`, `documents.py`, `app/models.py`, `app/pipeline.py`, `app/cli.py`, `config/templates.yaml` and tests (`tests/test_pipeline.py`, `tests/test_output_validator.py`).
 
 ### Exit criteria
 
-- All tests pass.
-- `app.cli ask` gives correct, cited answers for the three draft example questions using the real model.
+- [x] All tests pass (247/247).
+- [x] `app.cli ask` gives correct, cited answers for the three draft example questions using the real model: Mid Cap TER 0.74% (scheme page), ELSS lock-in 3 years (scheme page), capital gains statement via CAMS / KFintech with PAN and email (statement guide). Each passed validation on the first attempt, footer 11 Nov 2026.
 
 ---
 
-## Phase 5: API and User Interface
+## Phase 5: API and Streamlit UI
 
-**Goal:** the public endpoints (§7) and the single-page UI (§8).
+**Status:** built on 13 Nov 2026. The UI moved from a static HTML page to **Streamlit** the same day (architecture D12). API tests and Streamlit `AppTest` tests pass; end-to-end latency passes under the Groq key's token limit (EV-5-08). Still to do by hand in a browser: the visual checklist below. See [eval-log.md](eval-log.md).
 
-**Depends on:** Phase 4C for the API. The UI can be built earlier against a stub `/api/chat` that returns fixed responses.
+**Goal:** the Streamlit UI (§8) and the optional JSON API (§7) over the same pipeline.
+
+**Depends on:** Phase 4C.
 
 ### Tasks
 
-**API (`app/api/routes.py`)**
+**Streamlit UI (`streamlit_app.py`, `app/ui.py`, `config/ui.yaml`, `.streamlit/config.toml`)**
 
-- [ ] `POST /api/chat`: request model with `message` 1–500 characters. Returns `ChatResponse`.
-- [ ] `GET /api/meta`: welcome message, three example questions, disclaimer text, list of schemes.
-- [ ] `GET /healthz`: index loaded, version and build date.
-- [ ] Rate limit with `slowapi` (`RATE_LIMIT`).
-- [ ] Error mapping: `422` invalid input, `429` rate limit, `503` index or LLM unavailable.
-- [ ] Custom `422` handler that returns field names only. FastAPI's default repeats the input, which could echo a PAN or phone number (EC-PII-15, EC-API-01).
-- [ ] Same-origin CORS, Content Security Policy header, static files mounted from `app/static/`.
+- [x] Disclaimer **"Facts-only. No investment advice."** at the top (sticky container) and in the sidebar.
+- [x] Welcome message and three example-question buttons from `config/ui.yaml`. Clicking one sends it.
+- [x] Each answer shows the text, a "Source" link (the citation title) and the footer `Last updated from sources: 11 Nov 2026`.
+- [x] Answer text rendered as escaped Markdown, so model or source text can't become a link, HTML, emphasis or LaTeX (EC-UI-05). Only `http(s)` citation URLs become links (EC-UI-06).
+- [x] A message the PII guard would block is never stored or shown back: the history shows a placeholder. A PII hint sits under the chat box and in the sidebar.
+- [x] Rate limits: `RATE_LIMIT` per session and `GLOBAL_RATE_LIMIT` per process (`app/ratelimit.py`), with a "please wait about N seconds" message. Timeout (`REQUEST_TIMEOUT_S`) and unavailability give friendly messages.
+- [x] One answer at a time: `runner.fastReruns = false`, and a second click on the same question within 3 s is ignored (EC-UI-01/02).
+- [x] History in session memory only, cleared on reload or with "Clear conversation" (EC-UI-08). Usage statistics off, error details hidden.
+- [x] Without an index or API key the page says factual answers are unavailable; template replies still work (EC-RET-07, EC-LLM-12).
+- [x] First start on a fresh host (`app/bootstrap.py`): import the reviewed fact cards (`config/reviewed_fact_cards.yaml`, made with `python -m ingestion.card_export export`), fetch the sources, build the index, load the pipeline.
+- [x] Removed: the static page (`app/static/`), its route and its tests.
 
-**UI (`app/static/index.html`, `app.js`, `styles.css`)**
+**JSON API (`app/main.py`, `app/api/routes.py`), optional**
 
-- [ ] Header with the disclaimer **"Facts-only. No investment advice."**, always visible.
-- [ ] Welcome message and three example-question chips loaded from `/api/meta`. Clicking a chip sends it.
-- [ ] Answer bubbles show text, a "Source" link and the footer. Links open in a new tab with `rel="noopener noreferrer"`.
-- [ ] Render all text with `textContent` (never `innerHTML`) so answers can't inject HTML.
-- [ ] Client-side PII check that warns before sending, plus the hint under the input box.
-- [ ] Loading state, friendly error messages for `429` and `503`.
-- [ ] History in page memory only. No cookies, local storage or analytics.
-- [ ] Accessibility: labeled input, keyboard use, focus states, an `aria-live` region for new answers, readable contrast, works at phone width.
+- [x] `POST /api/chat`: `message` 1–500 Unicode characters after trimming, extra fields rejected, `ChatResponse` back, `REQUEST_TIMEOUT_S` limit.
+- [x] `GET /api/meta` (shared `app/meta.py`) and `GET /healthz` (index version, build date, chunk count, `llm_configured`, `stale_sources`).
+- [x] `slowapi` rate limit per client address; behind a proxy, uvicorn's `--proxy-headers` with `--forwarded-allow-ips` set to the host's proxy only (EC-API-05).
+- [x] Error mapping: `422` field names only (EC-PII-15, EC-API-01/02), `429` with `Retry-After`, `503` with a reason code, `405`, generic `500` logging the error type only.
+- [x] JSON only: no CORS middleware, `default-src 'none'` Content Security Policy, `nosniff`, no API docs.
 
 ### Tests
 
-- [ ] API tests with FastAPI `TestClient` and a fake pipeline: validation errors (never echoing the input), rate limit, response schema, `/api/meta` content.
+- [x] Streamlit UI (`tests/test_streamlit_ui.py`, `AppTest`, real pipeline with a fake LLM): disclaimer, title, three examples and the chat box; a typed question gets a cited answer with the footer; an example button sends its question; a PAN is never shown back or stored and never reaches the LLM; the session rate limit; no index; no LLM; "Clear conversation"; Markdown escaping; only http(s) links.
+- [x] Deployment support (`tests/test_deploy.py`): rate-limit parsing and the sliding window, card export/import (approved only, local review wins, hashes kept), the committed export, and the bootstrap (reuse an index, build when missing, keep serving templates when the build fails).
+- [x] API (`tests/test_api.py`): validation errors without input echo (a 600-character message with a PAN), Unicode length, `405`, `429` with `Retry-After`, `503` and timeout, `500`, `/api/meta`, `/healthz`, security headers, no CORS, no docs, and end to end with the real pipeline.
 
-### Manual checklist
+### Live checks (13 Nov 2026, real index and Groq)
+
+- [x] 20 real questions through the API: every response had the expected type and citation. Back to back, p95 15.5 s because the key allows **8,000 tokens per minute** (about 4 answers); paced under that, **p50 0.51 s, p95 0.88 s** (EV-5-08). Logs record `rate_limit_wait_s`.
+- [x] The Streamlit app with the real startup path (`AppTest`): the Mid Cap expense-ratio example answered in 0.9 s with its citation and footer, and one JSON log line without question text. `streamlit run streamlit_app.py` serves and `/_stcore/health` answers `ok`.
+- [x] Fresh-deployment simulation (empty data folder): 49 cards imported, 27 documents fetched, index built in 41 s. Because the live Gold and Silver FoF pages changed since the 10 Nov fetch, 13 cards were withdrawn and the Silver page failed its sanity check (no benchmark shown). The safety rules worked as designed; the affected cards need re-extraction and review (Phase 6).
+- [x] Found and fixed: other fund houses' questions now get the "I only cover these 7 HDFC schemes" reply.
+- [x] Noted for Phase 6: "Is the capital gain statement free?" was answered "No, most RTAs … offer it free of cost" (the "No" copied from the source FAQ "Is there any charge?").
+
+### Manual checklist (in a browser: `streamlit run streamlit_app.py`)
 
 - [ ] Disclaimer visible on load and while scrolling.
-- [ ] Each example chip returns a cited answer with the footer.
+- [ ] Each example button returns a cited answer with the footer.
 - [ ] An advisory question shows a polite refusal with an education link.
-- [ ] A message containing a PAN shows the warning and, if sent, the `pii_blocked` response.
+- [ ] A message containing a PAN shows the `pii_blocked` reply and the placeholder, not the PAN.
 - [ ] Layout works at 375 px width and with keyboard only.
+- [ ] Accessibility scan (Lighthouse or axe): no critical issues (EV-5-06).
 
 ### Deliverables
 
-- `app/api/routes.py`, `app/static/*` and API tests.
+- [x] `streamlit_app.py`, `app/ui.py`, `app/bootstrap.py`, `app/ratelimit.py`, `app/meta.py`, `.streamlit/`, `config/ui.yaml`, `config/reviewed_fact_cards.yaml`, `ingestion/card_export.py`, the JSON API and tests.
 
 ### Exit criteria
 
-- API tests pass and the manual checklist is complete.
+- [x] Tests pass (294/294).
+- [ ] The manual checklist is complete.
 
 ---
 
@@ -599,7 +628,9 @@ All §12.2 targets met on the full set and on the held-back questions:
 
 ## Phase 7: Docs, Packaging and Deployment
 
-**Goal:** the required deliverables and a running deployment.
+**Status:** started 13 Nov 2026. README written and the repository is ready for Streamlit Community Cloud; the app itself is deployed from the Streamlit Cloud dashboard by the owner.
+
+**Goal:** the required deliverables and a running private deployment.
 
 **Depends on:** Phase 6.
 
@@ -607,44 +638,46 @@ All §12.2 targets met on the full set and on the held-back questions:
 
 **README (required by the problem statement)**
 
-- [ ] Setup instructions: prerequisites, `uv sync`, `.env`, `python -m ingestion.run`, fact-card review, `uvicorn app.main:app`.
-- [ ] Selected AMC and the 7 schemes.
-- [ ] Architecture overview of the RAG approach, with a link to `docs/architecture.md`.
-- [ ] Known limitations (§18).
-- [ ] Disclaimer snippet: **"Facts-only. No investment advice."**
+- [x] Setup: prerequisites, `uv sync`, `.env`, `python -m ingestion.run`, fact-card extraction and review, card export, `streamlit run streamlit_app.py`.
+- [x] Selected AMC and the 7 schemes.
+- [x] Architecture overview of the RAG approach, with a link to `docs/architecture.md`.
+- [x] Known limitations (§18).
+- [x] Disclaimer snippet: **"Facts-only. No investment advice."**
 
 **Packaging**
 
-- [ ] `Dockerfile`: slim Python base, install with `uv`, download the embedding model at build time, run as a non-root user, add a `HEALTHCHECK` on `/healthz`.
-- [ ] Decide how the index ships: built in CI and copied into the image, or mounted from a volume.
+- [x] Dependencies in `pyproject.toml` + `uv.lock`, which Community Cloud installs. Linux resolves `torch` to the CPU-only build (no CUDA libraries).
+- [x] Index strategy: never committed. A fresh deployment builds it from the official sources at first start, with the reviewed fact cards from `config/reviewed_fact_cards.yaml`.
+- [ ] Optional: a Dockerfile for other hosts (slim Python base, `uv sync --frozen`, non-root user, health check).
 
-**Deployment**
+**Deployment (Streamlit Community Cloud)**
 
-- [ ] **Public deployment only with HDFC AMC's written permission.** Their terms allow personal, non-commercial use only. Without permission, run it locally or as a private demo (architecture §16).
-- [ ] Deploy to a container host with about 1 GB RAM. Set `GROQ_API_KEY` as a secret.
-- [ ] Smoke test the deployed URL: `/healthz`, the three example questions, one advisory question, one PII message.
+- [ ] **Keep the app private** (Share → only specific people) until HDFC AMC gives written permission for public use. Their terms allow personal, non-commercial use only (architecture §16).
+- [ ] Create the app: repository `akashtickoo/growwChatBot`, the deployed branch, main file `streamlit_app.py`, Python 3.12.
+- [ ] Secrets: paste `.streamlit/secrets.toml.example` with the real `GROQ_API_KEY`.
+- [ ] Smoke test the deployed app: the three example questions, one advisory question, one PII message; check the sidebar's index version.
 
 **Refresh routine**
 
-- [ ] Write a short runbook in the README (below).
+- [x] Runbook in the README.
 - [ ] Optional: a scheduled job (e.g. GitHub Actions cron) that runs ingestion monthly and opens a report for review.
 
 ### Release checklist
 
 - [ ] All tests pass.
 - [ ] Latest eval scorecard meets the targets.
-- [ ] `/healthz` shows the expected index version and build date.
+- [ ] The deployed app shows the expected index version in the sidebar.
 - [ ] Disclaimer visible in the deployed UI.
-- [ ] No secrets or `data/raw/` files committed.
+- [ ] No secrets or `data/` files committed.
 
 ### Deliverables
 
-- README, Dockerfile, deployed instance.
+- README, Streamlit Community Cloud configuration, deployed private app.
 
 ### Exit criteria
 
 - A fresh clone runs by following only the README.
-- The deployed instance passes the smoke test.
+- The deployed app passes the smoke test.
 
 ---
 
@@ -656,7 +689,8 @@ Each month (expense ratio and riskometer values on the pages usually change mont
 2. Read the run report. Fix any failed fetches or moved URLs in `sources.yaml`.
 3. Review `fact_diff_<date>.md` with `python -m ingestion.review_facts`.
 4. Run `python -m eval.run_eval` and confirm the targets still hold.
-5. Restart or redeploy so the server loads the new index. Confirm the build date on `/healthz`.
+5. Export the reviewed cards (`python -m ingestion.card_export export`) and commit `config/reviewed_fact_cards.yaml`.
+6. Reboot the Streamlit app so it rebuilds from the current sources. Confirm the index version in its sidebar.
 
 ---
 
@@ -674,8 +708,8 @@ How each problem-statement requirement is built and checked.
 | Refuse advisory questions politely, with an education link | 4A, 4C | Intent rules, LLM `advisory` status, refusal template | Intent tests, golden set advisory group |
 | Performance questions: link to the official factsheet only | 4A, 4C | Intent rules, `performance_redirect` (Fund Facts PDF or Factsheets page), validator policy check | Golden set performance group |
 | Official sources only (AMC, AMFI, SEBI); no aggregators | 1, 2 | HDFC MF allowlist, manifest tests (no Groww URL as a source), education-link allowlist | Manifest tests, ingestion tests, citation validity |
-| No PAN, Aadhaar, account numbers, OTPs, email, phone | 4A, 4C, 5 | PII guard, log policy, client-side warning | PII tests, golden set PII group |
-| Welcome message, three examples, visible disclaimer | 5 | Static UI, `/api/meta` | Manual checklist |
+| No PAN, Aadhaar, account numbers, OTPs, email, phone | 4A, 4C, 5 | PII guard, log policy, Streamlit placeholder for blocked messages | PII tests, UI tests, golden set PII group |
+| Welcome message, three examples, visible disclaimer | 5 | Streamlit UI, `config/ui.yaml` | UI tests, manual checklist |
 | README: setup, AMC + schemes, architecture, limitations | 7 | README | Fresh-clone check |
 | Disclaimer snippet | 5, 7 | UI header, README | Manual checklist |
 
@@ -687,7 +721,8 @@ How each problem-statement requirement is built and checked.
 |---|---|---|
 | HDFC MF blocks scripted requests | 1, 2 | Manual save with `fetch: manual`, keeping the official URL for citations. |
 | HDFC MF changes page layout, link labels or PDF URLs | 2, 3 | PDFs found by link text, not stored URLs. Sanity check per fetch. Verbatim-quote check and the fact-card diff report catch changed or missing values. |
-| Content-use terms (personal, non-commercial only) | 7 | No public deployment without HDFC AMC's written permission. |
+| Content-use terms (personal, non-commercial only) | 7 | The Streamlit app stays private without HDFC AMC's written permission. |
+| Live pages change before a deployment builds its index | 5, 7 | Changed cards are withdrawn and a failing page is left out. Re-review, re-export and reboot after source changes. |
 | Table parsing errors in exit-load or expense-ratio tables | 2, 3 | Verbatim-quote check and human review of every card. |
 | Intent rules refuse too many factual questions | 4A, 6 | Measure false refusals in the eval and adjust the rules. |
 | Groq retires or changes the chosen model | 4C, 6 | The model ID is config. Re-run the generation and golden-set evals after any model change. The client sits behind an interface, so changes stay local. |

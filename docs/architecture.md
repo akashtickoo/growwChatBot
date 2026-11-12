@@ -42,6 +42,7 @@ These decisions also answer the open questions in the problem statement.
 | D9 | **Embeddings** | Local `BAAI/bge-small-en-v1.5` via `sentence-transformers`. | Free, fast on CPU and enough for a small corpus (11 pages and about 20 PDFs). No second API key. |
 | D10 | **Structured "fact cards"** | During ingestion, key facts per scheme are extracted into reviewed records and indexed as high-priority chunks. A card is withdrawn when its page changes, until it is reviewed again. | The most common questions get answers from a clean, reviewed record. Withdrawal stops an outdated value from being served (EC-RET-04). |
 | D11 | **Plans covered** | Only the Direct Growth plan of each scheme (and the FoF, not the underlying ETF). Questions about Regular plans, IDCW options or the plain Gold/Silver ETF get a "not covered" reply. | Expense ratios and other facts differ between plans and products (EC-SCH-05, EC-SCH-09). |
+| D12 | **UI and hosting** | A Streamlit app (`streamlit_app.py`, `app/ui.py`) that calls the pipeline in-process, deployed on Streamlit Community Cloud as a **private** app. The FastAPI JSON API stays for local integration and scripted checks. | Decided 13 Nov 2026 (replaces the static HTML page built in Phase 5). One Python process to deploy, no separate frontend. Private sharing keeps it a private demo, as HDFC MF's terms require (§16). |
 
 ### 2.1 Behavior Decisions (decided 11 Nov 2026)
 
@@ -84,7 +85,7 @@ flowchart LR
     end
 
     subgraph Online["Online: Query serving"]
-        U["Web UI"] -->|POST /api/chat| P["PII guard"]
+        U["Streamlit UI (or JSON API)"] --> P["PII guard"]
         P --> I["Intent rules"]
         I --> S["Scheme resolver"]
         S --> R["Hybrid retriever"]
@@ -101,7 +102,7 @@ flowchart LR
 **Two halves:**
 
 1. **Ingestion (offline).** Builds a versioned index from the official HDFC MF sources. Runs on a schedule or by hand.
-2. **Query serving (online).** A FastAPI service that runs each question through guards, retrieval, one LLM call, validation and formatting.
+2. **Query serving (online).** A Streamlit app (D12) that runs each question in-process through guards, retrieval, one LLM call, validation and formatting. The same pipeline is also served as a FastAPI JSON API for local use.
 
 ---
 
@@ -306,8 +307,8 @@ Fields: `expense_ratio`, `exit_load`, `min_sip`, `min_lumpsum`, `lock_in`, `risk
 
 ```mermaid
 sequenceDiagram
-    participant UI as Web UI
-    participant API as FastAPI /api/chat
+    participant UI as Streamlit UI
+    participant API as Pipeline (app/pipeline.py)
     participant G as Guards
     participant SR as Scheme resolver
     participant RT as Retriever
@@ -362,7 +363,7 @@ Runs first, after NFKC normalization and removal of control characters, so full-
 | OTP | 4–8 digit number near the words "OTP", "code", "one time" |
 | Account / folio numbers | 9–18 digit runs, or digits near "account", "a/c", "folio". Numbers next to "₹", "Rs", "rupees", "lakh" or "crore" are excluded, so amounts pass (EC-PII-13). |
 
-Response: a polite template asking the user not to share personal details, saying none are needed. The web UI runs the same patterns before sending and warns the user first, but the server check is the one that counts (EC-PII-14).
+Response: a polite template asking the user not to share personal details, saying none are needed. The Streamlit UI shows a hint under the chat box and never stores or shows back a blocked message (a placeholder is shown instead). The guard in the pipeline is the check that counts (EC-PII-14).
 
 ### 6.3 Stage 2: Intent rules (`app/guards/intent.py`)
 
@@ -414,7 +415,7 @@ Outcomes:
 3. Merge with **Reciprocal Rank Fusion** (k = 60).
 4. Boost `FACT_CARD` chunks when a field was detected.
 5. Keep the top 5 chunks.
-6. If the best dense similarity is below `MIN_SIMILARITY` (start at 0.45, tuned in [eval.md](eval.md) §8), return `not_found` without calling the LLM.
+6. If the best dense similarity is below `MIN_SIMILARITY` (0.63, chosen from the Phase 4B threshold sweep in [eval.md](eval.md) §8; re-checked in Phase 6), return `not_found` without calling the LLM.
 
 Optional later: a cross-encoder reranker (`BAAI/bge-reranker-base`) if evaluation shows ranking errors.
 
@@ -437,7 +438,7 @@ Parse `choices[0].message.content` with `json.loads` and validate it with the py
 - `length` (cut off) or empty content: a failure (one retry, then `not_found`).
 - Rate limit (`429`): wait for `retry-after` once, then use the fallback model if set, otherwise return `503`.
 
-Strict mode requires every property to be listed in `required` and `additionalProperties: false`, which the schema below follows. If Groq rejects the nullable `source_id` type, use an empty string for "no source" instead.
+Strict mode requires every property to be listed in `required` and `additionalProperties: false`, which the schema below follows. "No source" is an empty string rather than null, which keeps the schema to plain types (built in Phase 4C, `app/llm/schemas.py`).
 
 **Output schema**
 
@@ -447,7 +448,7 @@ Strict mode requires every property to be listed in `required` and `additionalPr
   "properties": {
     "status":    { "type": "string", "enum": ["answered", "insufficient_context", "advisory", "out_of_scope"] },
     "answer":    { "type": "string" },
-    "source_id": { "type": ["string", "null"] }
+    "source_id": { "type": "string" }
   },
   "required": ["status", "answer", "source_id"],
   "additionalProperties": false
@@ -500,7 +501,7 @@ Every LLM answer must pass all checks:
 | Length | ≤ 3 sentences of answer text. The Source line and footer don't count (§2.1). The splitter (`pysbd`) knows abbreviations and decimals ("Rs.", "e.g.", "No.", "0.75%"). Each bullet or line break counts as a sentence. |
 | Language | English. |
 | No links | No `http`, `www.` or markdown links in the answer text. |
-| Grounding | Every number, percentage and date in the answer appears in the cited chunk text **or** its `doc_as_of` (EC-FLD-12), after normalizing "₹1,000" / "Rs 1000" etc. |
+| Grounding | Every number, percentage and date in the answer appears in the cited chunk text, its `doc_as_of` or the cited document's registry as-of date (EC-FLD-12), or in the user's question ("after 6 months"), after normalizing "₹1,000" / "Rs 1000" and "1.00%" / "1%". |
 | Policy | No strongly advisory phrases ("you should invest", "we recommend", "good choice", "better than") and no return figures ("returns of x%", "CAGR", "XIRR"). Kept narrow to avoid rejecting legitimate text (EC-FMT-04). |
 
 On failure: one retry, with the failed checks listed in a follow-up message. A second failure gives the `not_found` template, which still links the scheme's official page.
@@ -533,11 +534,20 @@ Last updated from sources: 10 Nov 2026
 
 Every type except `clarify` and `greeting` has exactly one link and the footer. Every template is ≤ 3 sentences.
 
+**Decisions made while building Phase 4C (13 Nov 2026):**
+
+- **Footer date for fixed education links.** A refusal, PII or scope reply links SEBI or AMFI, which aren't in the registry. Its footer shows the newest `fetched_at` in the registry, i.e. when the sources were last checked.
+- **NAV questions** (`performance` rule `nav`) link the scheme's official page, not the factsheet, with NAV-specific wording (EC-PERF-05).
+- **Mixed questions (D5).** An advisory question that also names a fact field gets a refusal that invites the user to ask for the fact on its own.
+- **Not covered before performance.** "SBI Small Cap returns" gets the not-covered reply, never another fund house's factsheet.
+- **Fund Facts fallback.** A scheme without a Fund Facts PDF in the registry (the two FoFs) links the Factsheets page.
+- **Missing registry row.** If a cited document isn't in the registry, the answer becomes `not_found`, and templates fall back to a fixed education link, so the one-link rule always holds.
+
 ---
 
 ## 7. API
 
-Served by FastAPI.
+Served by FastAPI (`app/main.py`, `uvicorn app.main:app`). Optional: the deployed UI calls the pipeline directly (D12). The API is kept for local integration, scripted checks and a possible future frontend.
 
 ### `POST /api/chat`
 
@@ -580,42 +590,43 @@ Returns the welcome message, the three example questions, the disclaimer text an
 
 Reports whether the index is loaded, its version and build date, whether the LLM is configured, and any source pages not fetched successfully in the last 14 days.
 
+The API serves JSON only: no page, API docs (`/docs`, `/openapi.json`) turned off, and a `default-src 'none'` Content Security Policy on every response.
+
+**Groq quota (measured 13 Nov 2026).** The current key allows 8,000 tokens per minute and 1,000 requests per day. An answer uses about 1,700 tokens, so about 4 answers per minute fit before rate-limit waits start (paced: p95 0.9 s; back to back: p95 15 s). Each request's log line records `rate_limit_wait_s`. More than a single-user demo needs a higher tier, or `GROQ_FALLBACK_MODEL`. The Streamlit app adds a process-wide limit (`GLOBAL_RATE_LIMIT`) on top of the per-session one.
+
 ---
 
 ## 8. User Interface
 
-A single static page (`app/static/index.html` + `app.js` + `styles.css`) served by FastAPI. No framework, no build step.
+A Streamlit app (D12): `streamlit_app.py` is the entry point and `app/ui.py` holds the page. It calls the pipeline in-process, so guards, citation rules and logging are the same as the API's. Page text (title, disclaimer, welcome, example questions, PII hint) comes from `config/ui.yaml`.
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│  HDFC Mutual Fund FAQ Assistant                          │
-│  ⚠ Facts-only. No investment advice.        (always shown)│
-├──────────────────────────────────────────────────────────┤
-│  👋 Hi! Ask me factual questions about 7 HDFC Mutual      │
-│  Fund schemes: expense ratio, exit load, minimum SIP,    │
-│  lock-in, riskometer, benchmark, and statements.         │
-│                                                          │
-│  [What is the expense ratio of HDFC Mid Cap Fund?]       │
-│  [What is the lock-in period of HDFC ELSS Tax Saver?]    │
-│  [How do I get my capital gains statement?]              │
-│                                                          │
-│  ── answer bubbles: text, "Source" link, footer ──       │
-├──────────────────────────────────────────────────────────┤
-│  [ Type your question...                     ] [ Send ]  │
-│  Please don't enter PAN, Aadhaar, account numbers, OTPs. │
-└──────────────────────────────────────────────────────────┘
+┌───────────────┬──────────────────────────────────────────┐
+│ Sidebar       │ ⚠ Facts-only. No investment advice.      │ ← sticky
+│ disclaimer    │ HDFC Mutual Fund FAQ Assistant           │
+│ 7 schemes     │ 📄 Hi! Ask me factual questions about 7   │
+│ PII hint      │    HDFC Mutual Fund schemes …            │
+│ index version │    [What is the expense ratio of …?]     │
+│ [Clear        │    [What is the lock-in period of …?]    │
+│  conversation]│    [How do I get my capital gains …?]    │
+│               │ 🙂 question                               │
+│               │ 📄 answer text                            │
+│               │    Source: <document title, linked>      │
+│               │    Last updated from sources: 11 Nov 2026│
+│               │ Please don't enter PAN, Aadhaar, …       │
+│               │ [ Type your question…            ] (➤)   │
+└───────────────┴──────────────────────────────────────────┘
 ```
 
 The example questions were chosen in Phase 1 so each has an official source: the Mid Cap TER (0.74%) and ELSS lock-in (3 years) from the scheme pages, and the capital gain statement guide (see [coverage-matrix.md](coverage-matrix.md)).
 
-- Example chips send their question when clicked. Ignored while a request is pending.
-- Send is disabled while waiting, so a double click sends one request.
-- All text rendered with `textContent`, never `innerHTML`. Citation URLs that aren't `http(s)` are not rendered as links.
-- Source links open in a new tab with `rel="noopener noreferrer"`.
-- History is kept in page memory only. Reloading clears it. No cookies, no local storage, no analytics.
-- A client-side PII check warns before sending.
-- Accessible: keyboard navigable, labeled input, an `aria-live` region for new answers, enough color contrast, works at 375 px width.
-- A notice appears if JavaScript is disabled.
+- The disclaimer is shown at the top (kept in view with a sticky container) and in the sidebar.
+- Example buttons send their question. A second click on the same question within 3 s is ignored, and `runner.fastReruns = false` finishes the current answer before handling the next click, so an answer in progress is never cut off (EC-UI-01/02).
+- Answer text is rendered as escaped Markdown: nothing from a model or a source can become a link, HTML, emphasis or a LaTeX formula (EC-UI-05). The only link is the citation, built from the registry URL and only when it is `http(s)` (EC-UI-06). Streamlit opens Markdown links in a new tab.
+- History lives in the browser session's memory on the server and is cleared on reload or with "Clear conversation" (EC-UI-08). A message the PII guard would block is never stored or shown back; a placeholder is shown instead. No cookies, no analytics (`browser.gatherUsageStats = false`), no error details shown to users (`client.showErrorDetails = "none"`).
+- Rate limits: `RATE_LIMIT` per browser session and `GLOBAL_RATE_LIMIT` for the whole process, which also protects the Groq quota. The pipeline runs in a worker thread with `REQUEST_TIMEOUT_S` as the limit.
+- If the index or the API key is missing, the page says factual answers are unavailable; refusals, PII replies, clarifications and greetings still work.
+- Streamlit's chat input caps messages at 500 characters (counted in Unicode characters, like the API) and provides keyboard use and labelled controls.
 
 ---
 
@@ -687,13 +698,13 @@ SQLite (`data/registry.sqlite`) tables: `documents`, `fact_cards`, `index_builds
 | PII | Blocked before processing (6.2). Never sent to the LLM, never logged. The whole message is dropped, even when it also contains a valid question (EC-PII-10). |
 | Error responses | Custom `422` handler that never echoes input (EC-PII-15). Exception logs hold `request_id` and error type only. |
 | Logging | Logs hold `request_id`, time, intent type, scheme ID, chunk IDs, citation URL, validator result, served model and latency. **No raw question text** in production. A local `DEBUG_LOG_QUERIES` flag logs PII-redacted text for development only; the app refuses to start with it on when `APP_ENV=production` (EC-PII-18). |
-| Storage | No user accounts, sessions, cookies or chat history on the server. |
+| Storage | No user accounts or cookies. Chat history lives only in the Streamlit session's memory and disappears on reload; blocked PII messages are never stored. Nothing is written to disk per user. |
 | Secrets | `GROQ_API_KEY` from the environment only, hidden when settings are printed. `.env` is gitignored. |
-| Abuse and cost | Per-IP rate limit (`RATE_LIMIT`, keyed on the hosting platform's trusted proxy header), 500-character input cap, 20 s request timeout. Optional daily spend cap on the API key. |
+| Abuse and cost | Streamlit: per-session `RATE_LIMIT` plus process-wide `GLOBAL_RATE_LIMIT`. API: per-IP `RATE_LIMIT` (keyed on the host's trusted proxy header). 500-character input cap, 20 s request timeout. Optional daily spend cap on the API key. |
 | Prompt injection | Retrieved text and questions are wrapped as data, and the prompt tells the model to ignore instructions in them. The validator and server-side citation mapping limit what an injection could achieve. |
 | User-supplied URLs | Never fetched (EC-SEC-01). |
 | Source integrity | Only `www.hdfcfund.com` and `files.hdfcfund.com`, matched exactly and enforced on fetch and every redirect hop, HTTPS only, with a sanity check against soft-block pages. |
-| Web security | Same-origin CORS, Content Security Policy on the static page, text-only rendering of answers. |
+| Web security | Streamlit: answers rendered as escaped Markdown, only http(s) citation links, usage statistics off, error details hidden. API: same origin only, JSON-only Content Security Policy, no API docs. |
 
 ---
 
@@ -731,7 +742,7 @@ Full details are in [eval.md](eval.md). In summary:
 | Advice in any response, not-covered misroutes, PII forwarded or logged | 0 |
 | Latency | p95 ≤ 5 s |
 
-**Automated tests (`tests/`, pytest):** unit tests for guards, resolver, validator and composer; pipeline tests with a fake LLM for every response type, retries and refusals; ingestion tests on saved HDFC MF page and PDF fixtures (sanity check, linked-PDF discovery, hashing, section stripping, KIM table parsing, atomic switch, lock); API tests for validation, rate limits and the response schema.
+**Automated tests (`tests/`, pytest):** unit tests for guards, resolver, validator and composer; pipeline tests with a fake LLM for every response type, retries and refusals; ingestion tests on saved HDFC MF page and PDF fixtures (sanity check, linked-PDF discovery, hashing, section stripping, KIM table parsing, atomic switch, lock); API tests for validation, rate limits and the response schema; Streamlit UI tests with `streamlit.testing.v1.AppTest` (page content, answers, PII handling, rate limit, escaping).
 
 ---
 
@@ -740,7 +751,8 @@ Full details are in [eval.md](eval.md). In summary:
 | Layer | Choice |
 |---|---|
 | Language | Python 3.12 |
-| Web framework | FastAPI + Uvicorn |
+| UI | Streamlit (Community Cloud) |
+| JSON API (optional) | FastAPI + Uvicorn |
 | LLM | Groq, `openai/gpt-oss-120b`, via the `groq` Python SDK |
 | Eval judge | Groq, `qwen/qwen3.8-27b` (evaluation only) |
 | Embeddings | `sentence-transformers` with `BAAI/bge-small-en-v1.5` |
@@ -748,16 +760,15 @@ Full details are in [eval.md](eval.md). In summary:
 | Keyword search | `rank_bm25` |
 | Fuzzy matching | `rapidfuzz` |
 | HTTP fetching | `httpx` (no headless browser: the HDFC MF pages are server-rendered) |
-| HTML parsing | `beautifulsoup4`, `trafilatura` |
+| HTML parsing | `beautifulsoup4` |
 | PDF parsing | `pymupdf`, `pdfplumber` |
 | Sentence splitting | `pysbd` |
 | Validation and settings | `pydantic`, `pydantic-settings` |
 | Metadata store | SQLite (standard library) |
 | Time zones | `tzdata` (Windows has no built-in time zone data) |
-| Rate limiting | `slowapi` |
-| Tests | `pytest` |
-| Frontend | Static HTML, CSS, vanilla JavaScript |
-| Packaging | `pyproject.toml` (uv), Docker |
+| Rate limiting | `slowapi` (API), a small sliding-window limiter (Streamlit) |
+| Tests | `pytest`, Streamlit `AppTest` |
+| Packaging | `pyproject.toml` + `uv.lock` (uv). Linux gets the CPU-only `torch` build from the PyTorch index, so Streamlit Cloud doesn't install CUDA libraries. |
 
 ---
 
@@ -765,80 +776,49 @@ Full details are in [eval.md](eval.md). In summary:
 
 ```text
 growwChatBot/
-├── README.md                     # setup, AMC + schemes, architecture summary, limitations, disclaimer
-├── pyproject.toml
-├── Dockerfile
+├── README.md                     # setup, deployment, AMC + schemes, architecture, limitations
+├── streamlit_app.py              # Streamlit entry point (D12)
+├── pyproject.toml / uv.lock      # dependencies (CPU-only torch on Linux)
 ├── .env.example                  # every variable in §15
+├── .streamlit/
+│   ├── config.toml               # no usage stats, no error details, fastReruns off
+│   └── secrets.toml.example      # what to paste into Streamlit Cloud's Secrets
 ├── config/
 │   ├── schemes.yaml              # scheme registry + aliases
 │   ├── sources.yaml              # HDFC MF allowlist, scheme pages, statement pages
 │   ├── templates.yaml            # refusal / redirect / PII / scope / not-found texts
+│   ├── ui.yaml                   # page title, disclaimer, welcome, example questions
+│   ├── reviewed_fact_cards.yaml  # approved fact cards, imported by a fresh deployment
 │   └── education_links.yaml      # fixed links used in templates (§2.1)
 ├── app/
-│   ├── main.py                   # FastAPI app, static files, startup index load
+│   ├── ui.py                     # Streamlit page
+│   ├── bootstrap.py              # first start: import reviewed cards, build index, load pipeline
+│   ├── ratelimit.py              # sliding-window limiter for the Streamlit app
+│   ├── meta.py                   # page content from config/ui.yaml
+│   ├── main.py                   # FastAPI JSON API: /api/chat, /api/meta, /healthz
+│   ├── api/routes.py
 │   ├── settings.py
-│   ├── models.py
+│   ├── models.py                 # ChatResponse, Citation, footer()
 │   ├── cli.py                    # `python -m app.cli ask "<question>"`
-│   ├── api/routes.py             # /api/chat, /api/meta, /healthz
 │   ├── pipeline.py               # orchestrates the query stages
-│   ├── guards/
-│   │   ├── pii.py
-│   │   ├── intent.py
-│   │   └── output_validator.py
-│   ├── retrieval/
-│   │   ├── fields.py
-│   │   ├── scheme_resolver.py
-│   │   ├── hybrid.py
-│   │   └── index_loader.py
-│   ├── llm/
-│   │   ├── groq_json.py          # strict-JSON Groq calls, rate limits, fallback model (Phase 3)
-│   │   ├── client.py             # answer step on top of groq_json (Phase 4C)
-│   │   ├── prompts.py
-│   │   └── schemas.py
-│   ├── responses/
-│   │   ├── templates.py
-│   │   └── composer.py
-│   └── static/
-│       ├── index.html
-│       ├── app.js
-│       └── styles.css
+│   ├── guards/                   # pii.py, intent.py, output_validator.py
+│   ├── retrieval/                # fields.py, scheme_resolver.py, hybrid.py, index_loader.py
+│   ├── llm/                      # groq_json.py, client.py, prompts.py, schemas.py
+│   └── responses/                # composer.py, documents.py (registry lookups)
 ├── ingestion/
 │   ├── run.py                    # CLI entry point: fetch → parse → check → chunk → index
 │   ├── check_sources.py          # live check of every source (Phase 1)
-│   ├── manifest.py               # loads and validates config/*.yaml
-│   ├── linked_docs.py            # finds SID / KIM / Fund Facts links on scheme pages
-│   ├── fetch.py
-│   ├── parse_html.py
-│   ├── parse_pdf.py
-│   ├── sanity.py                 # block-page and required-content checks
-│   ├── normalize.py
-│   ├── chunk.py
-│   ├── embed.py
-│   ├── build_index.py
-│   ├── registry.py
-│   ├── lock.py
-│   ├── models.py
-│   ├── paths.py
-│   ├── inspect.py
+│   ├── manifest.py, linked_docs.py, fetch.py, sanity.py
+│   ├── parse_html.py, parse_pdf.py, normalize.py, chunk.py
+│   ├── embed.py, build_index.py, registry.py, lock.py, models.py, paths.py
+│   ├── inspect.py, audit.py      # look at chunks, chunk checks
 │   ├── fact_cards.py             # extraction, quote check, diff report, FACT_CARD chunks
-│   └── review_facts.py           # approve / reject cards
-├── data/                         # gitignored
-│   ├── raw/                      # newest 3 copies of each fetched source
-│   ├── processed/                # chunks per document
-│   ├── index/                    # one folder per version + `current` pointer
-│   ├── reports/
-│   └── registry.sqlite
+│   ├── review_facts.py           # approve / reject cards
+│   └── card_export.py            # export approved cards to config/, import on a fresh deploy
+├── data/                         # gitignored: raw/, processed/, index/, reports/, registry.sqlite
 ├── eval/                         # datasets and runners, see eval.md §16
-├── tests/
-│   └── fixtures/                 # saved HDFC MF page and PDF samples
-└── docs/
-    ├── problemStatement.md
-    ├── architecture.md
-    ├── implementation-plan.md
-    ├── edge-case.md
-    ├── eval.md
-    ├── eval-log.md
-    └── coverage-matrix.md
+├── tests/                        # pytest; synthetic fixtures only, no HDFC MF content
+└── docs/                         # problem statement, architecture, plan, edge cases, eval, logs
 ```
 
 ---
@@ -857,21 +837,28 @@ growwChatBot/
 | `APP_ENV` | `development` | `development` or `production` |
 | `INDEX_DIR` | `data/index` | Where index versions live |
 | `RETRIEVAL_TOP_K` | `5` | Chunks sent to the LLM |
-| `MIN_SIMILARITY` | `0.45` | Below this, return `not_found` (tuned in Phase 6) |
+| `MIN_SIMILARITY` | `0.63` | Below this, return `not_found` (set in Phase 4B from the threshold sweep; re-checked in Phase 6) |
 | `REQUEST_TIMEOUT_S` | `20` | Per-request time limit |
-| `RATE_LIMIT` | `20/minute` | Per-IP limit |
+| `RATE_LIMIT` | `20/minute` | Per browser session (Streamlit) or per client address (API) |
+| `GLOBAL_RATE_LIMIT` | `60/minute` | Whole Streamlit process, across sessions; protects the Groq quota |
 | `DISPLAY_TIMEZONE` | `Asia/Kolkata` | Timezone for the footer date |
 | `STALE_SOURCE_DAYS` | `14` | `/healthz` flags pages not fetched for this long |
 | `DEBUG_LOG_QUERIES` | `false` | Log redacted questions (local only; blocked in production) |
+
+Locally these come from `.env`. On Streamlit Community Cloud they go in the app's Secrets (root-level keys become environment variables); see `.streamlit/secrets.toml.example`.
 
 ---
 
 ## 16. Deployment
 
-- **Local**: `uv sync` → `python -m ingestion.run` → `python -m ingestion.review_facts` → `uvicorn app.main:app --reload` → open `http://localhost:8000`.
-- **Container**: the Dockerfile installs dependencies, downloads the embedding model at build time, runs as a non-root user and has a `HEALTHCHECK` on `/healthz`. The index is either built in CI and baked into the image, or mounted from a volume and refreshed by a scheduled ingestion job.
-- **Public deployment needs permission.** HDFC MF's website terms allow downloading its content "for non-commercial and/or personal use only" and forbid using it "for public or commercial purposes… without HDFC AMC's written permission". Until that permission exists, run the assistant locally or as a private demo (§18).
-- **Hosting**: any container host with ~1 GB RAM. A single instance is enough for this scope. Configure the platform's trusted proxy header so rate limits apply per user.
+**Target: Streamlit Community Cloud, as a private app (D12).**
+
+- **Public deployment needs permission.** HDFC MF's website terms allow downloading its content "for non-commercial and/or personal use only" and forbid using it "for public or commercial purposes… without HDFC AMC's written permission". So the Streamlit app is shared **privately** (Share → "Only specific people can view this app") until that permission exists (§18).
+- **What the repository holds.** Code, configuration and the reviewed fact cards (`config/reviewed_fact_cards.yaml`: short values and quotes, like `eval/fact_labels.yaml`). Page content, PDFs and the index are never committed (`data/` is gitignored).
+- **First start** (`app/bootstrap.py`): with no index present, the app imports the reviewed fact cards into a new registry, fetches the official HDFC MF sources, builds the index (about 40 s locally plus the embedding-model download on the host) and loads the pipeline. Later starts in the same container reuse it. A card whose source page has changed since review is withdrawn (EC-RET-04), and a page that fails the sanity check is left out, so a fresh deployment can serve fewer cards than the local index until the cards are re-reviewed. If the build fails (e.g. the HDFC MF site is unreachable from the host), the app still serves template replies.
+- **Settings**: main file `streamlit_app.py`, Python 3.12 (Advanced settings), and the Secrets from `.streamlit/secrets.toml.example` (`GROQ_API_KEY`, `APP_ENV = "production"`, `MIN_SIMILARITY`, rate limits). Community Cloud installs from `uv.lock`; Linux resolves `torch` to the CPU-only build.
+- **Refreshing data**: run the monthly routine locally (fetch, review changed cards, `python -m ingestion.card_export export`), commit the updated `config/reviewed_fact_cards.yaml`, then reboot the app so it rebuilds from the current sources.
+- **Local**: `uv sync` → `python -m ingestion.run` → `python -m ingestion.review_facts` → `streamlit run streamlit_app.py`. Optional JSON API: `uvicorn app.main:app`.
 - **Release checks**: see [eval.md](eval.md) §12: fresh-clone test, deployed smoke set, secrets scan, and a passing 3-rep scorecard for the deployed commit and index.
 
 ---
@@ -887,7 +874,7 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 | 2 | Ingestion pipeline |
 | 3 | Fact cards |
 | 4A / 4B / 4C | Guards, retrieval, LLM step + validator + composer |
-| 5 | API and UI |
+| 5 | API and Streamlit UI |
 | 6 | Evaluation and tuning |
 | 7 | Docs, packaging and deployment |
 
@@ -897,7 +884,7 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 
 | Limitation / risk | Mitigation or note |
 |---|---|
-| HDFC MF's website terms allow personal, non-commercial use only. Public or commercial use needs HDFC AMC's written permission. | Run locally or as a private demo until permission exists. Stated in the README. Groww's terms are stricter still, which is one reason Groww pages are not a source (D1). |
+| HDFC MF's website terms allow personal, non-commercial use only. Public or commercial use needs HDFC AMC's written permission. | Run locally or as a private Streamlit app until permission exists. Stated in the README. Groww's terms are stricter still, which is one reason Groww pages are not a source (D1). |
 | HDFC MF may change page layout, link labels or document URLs. | Linked PDFs are found by link text, not stored URLs. Sanity check on each fetch; a missing link fails only that document. Fact-card quote check and diff report catch changed or missing values. |
 | Scheme pages give no as-of date for TER, exit load or riskometer. | The footer's fetch date is the only date for those values (D2). Weekly refresh. |
 | Data is only as fresh as the last fetch (weekly). | As-of dates in answers when shown, fetch date in the footer, stale-source flag on `/healthz`. NAV is never quoted. |
@@ -906,16 +893,18 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 | Rule-based intent detection can refuse some harmless questions. | Exception patterns, tuned with the golden set. The cost of a false refusal is low. |
 | One scheme and one citation per answer. | By design (D4). Users ask scheme by scheme. |
 | Mixed factual + advisory questions are fully refused. | By design (D5). The refusal invites a purely factual question. |
-| PII detection is pattern-based and misses disguised forms ("name at gmail dot com"). | Patterns run on both client and server; raw text is never logged or stored. |
+| PII detection is pattern-based and misses disguised forms ("name at gmail dot com"). | Raw text is never logged; a blocked message is never stored or shown back. |
 | English only. | Hinglish may be understood and answered in English; otherwise `not_found`. Non-English advisory phrasing is left to the LLM's `advisory` status. |
-| Depends on an external LLM API (Groq), including its rate limits and model retirements. | Templates still work when the API is down; `/api/chat` returns `503` for LLM-dependent answers. Optional fallback model. The model ID is config, and the evals are re-run after any model change. |
+| Depends on an external LLM API (Groq), including its rate limits and model retirements. The current key allows 8,000 tokens per minute (about 4 answers). | Templates still work when the API is down; factual questions get an "unavailable" reply (503 on the API). Optional fallback model. The model ID is config, and the evals are re-run after any model change. |
+| A fresh deployment rebuilds the index from the live pages at first start. | Cold start of a minute or more. Cards whose page changed since review are withdrawn; a page failing its sanity check is left out (seen on 13 Nov 2026: the Silver FoF page had an empty benchmark box). Re-review and re-export cards after source changes. |
 
 ---
 
 ## 19. Open Items
 
 - **Human check of the coverage matrix (EV-1-07).** A second person checks 10 random cells against the live sources before `eval/fact_labels.yaml` is used.
-- **Permission for public deployment.** HDFC MF's terms limit use to personal and non-commercial (§18). Ask HDFC AMC for written permission before deploying publicly.
+- **Permission for public deployment.** HDFC MF's terms limit use to personal and non-commercial (§18). Keep the Streamlit app private, and ask HDFC AMC for written permission before making it public.
+- **Gold and Silver FoF pages changed on 13 Nov 2026.** The Gold page's benchmark box text changed (same value); the Silver page shows no benchmark and a new exit-load text, so it fails the sanity check. Re-run ingestion, check the Silver page again, re-extract and review the 13 affected cards, then re-export them.
 - **Former scheme names.** Confirm the "former name" aliases in `config/schemes.yaml` against each SID during Phase 2.
 
 Resolved in Phase 1 (11 Nov 2026): the corpus (D1), the §2.1 decisions, robots.txt and terms checks, page rendering (server-side, no headless browser needed), and the UI example questions.

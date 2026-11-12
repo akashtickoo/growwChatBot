@@ -1,0 +1,834 @@
+# Approved fact cards (Phase 3 human review), exported from data/registry.sqlite.
+# Regenerate with: python -m ingestion.card_export export
+# A fresh deployment imports these before its first index build. A card whose source document has
+# changed since review (different content hash) is withdrawn until it is reviewed again.
+cards:
+- scheme_id: hdfc-elss-tax-saver
+  field: benchmark
+  status: found
+  value: NIFTY 500 Total Returns Index
+  verbatim_quote: 'Benchmark: NIFTY 500 Total Returns Index.'
+  source_doc_id: hdfc-elss-tax-saver-page
+  source_chunk_id: hdfc-elss-tax-saver-page#000
+  source_content_hash: ed1168f9112bc968653917c773bb683f0c2583f173f9ca93766fdd474a8a1c8a
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: null
+  conflicting: 1
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.349037+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:47:33.169342+00:00'
+- scheme_id: hdfc-elss-tax-saver
+  field: exit_load
+  status: found
+  value: 'Exit Load: Nil. No Exit Load shall be levied for switching between Plans / Options within the
+    Scheme. However, exit load will be applicable if the units are switched-out / redeemed from the Scheme
+    within the exit load period from the initial date of purchase.'
+  verbatim_quote: 'Exit Load: Nil (i) No Exit Load shall be levied for switching between Plans / Options
+    within the Scheme. However, exit load will be applicable if the units are switched-out / redeemed
+    from the Scheme within the exit load period from the initial date of purchase.'
+  source_doc_id: hdfc-elss-tax-saver-kim
+  source_chunk_id: hdfc-elss-tax-saver-kim#044
+  source_content_hash: f3643d8145cf3d392799d14227b5c2d7468f0209811dfdf85b4abcf0202b0573
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: '2025-11-21'
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.362335+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:46:15.442353+00:00'
+- scheme_id: hdfc-elss-tax-saver
+  field: expense_ratio
+  status: found
+  value: 1.19%
+  verbatim_quote: 'Total expense ratio (TER): 1.19%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-elss-tax-saver-page
+  source_chunk_id: hdfc-elss-tax-saver-page#000
+  source_content_hash: ed1168f9112bc968653917c773bb683f0c2583f173f9ca93766fdd474a8a1c8a
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.363843+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:45:58.058064+00:00'
+- scheme_id: hdfc-elss-tax-saver
+  field: lock_in
+  status: found
+  value: 3 years
+  verbatim_quote: 'Lock-in period: 3 years.'
+  source_doc_id: hdfc-elss-tax-saver-page
+  source_chunk_id: hdfc-elss-tax-saver-page#000
+  source_content_hash: ed1168f9112bc968653917c773bb683f0c2583f173f9ca93766fdd474a8a1c8a
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.363843+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:46:59.497040+00:00'
+- scheme_id: hdfc-elss-tax-saver
+  field: min_lumpsum
+  status: found
+  value: ₹500
+  verbatim_quote: Yes, SIP as well as Lump Sum investments are permitted with the minimum application
+    amount being ₹500. Any additional purchase must have a minimum amount of ₹500.
+  source_doc_id: hdfc-elss-tax-saver-page
+  source_chunk_id: hdfc-elss-tax-saver-page#004
+  source_content_hash: ed1168f9112bc968653917c773bb683f0c2583f173f9ca93766fdd474a8a1c8a
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.371975+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:46:45.054527+00:00'
+- scheme_id: hdfc-elss-tax-saver
+  field: min_sip
+  status: found
+  value: ₹500
+  verbatim_quote: 'Minimum SIP amount: ₹500.'
+  source_doc_id: hdfc-elss-tax-saver-page
+  source_chunk_id: hdfc-elss-tax-saver-page#000
+  source_content_hash: ed1168f9112bc968653917c773bb683f0c2583f173f9ca93766fdd474a8a1c8a
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.371975+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:46:32.664543+00:00'
+- scheme_id: hdfc-elss-tax-saver
+  field: riskometer
+  status: found
+  value: Very High
+  verbatim_quote: 'Riskometer: Very High.'
+  source_doc_id: hdfc-elss-tax-saver-page
+  source_chunk_id: hdfc-elss-tax-saver-page#000
+  source_content_hash: ed1168f9112bc968653917c773bb683f0c2583f173f9ca93766fdd474a8a1c8a
+  sources_hash: 08ddeaefdff67839860b1d2434fd4fa8e3a9b76c6b07871bce68276accf1a9b5
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.380127+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:47:19.722080+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: benchmark
+  status: found
+  value: Domestic Price of Physical Gold
+  verbatim_quote: 'Benchmark: Domestic Price of Physical Gold.'
+  source_doc_id: hdfc-gold-etf-fof-page
+  source_chunk_id: hdfc-gold-etf-fof-page#000
+  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.380127+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:49:22.721791+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: exit_load
+  status: found
+  value: Exit Load of 1% is payable if Units are redeemed/switched out within 15 days from the date of
+    allotment. No Exit Load is payable if Units are redeemed/switched-out on or after 15 days from the
+    date of allotment.
+  verbatim_quote: Exit Load of 1% is payable if Units are redeemed/switched out within 15 days from the
+    date of allotment. No Exit Load is payable if Units are redeemed/switched-out on or after 15 days
+    from the date of allotment.
+  source_doc_id: hdfc-gold-etf-fof-page
+  source_chunk_id: hdfc-gold-etf-fof-page#003
+  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.380127+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:48:05.032360+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: expense_ratio
+  status: found
+  value: 0.20%
+  verbatim_quote: 'Total expense ratio (TER): 0.20%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-gold-etf-fof-page
+  source_chunk_id: hdfc-gold-etf-fof-page#000
+  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.387873+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:47:48.955019+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: lock_in
+  status: found
+  value: NA
+  verbatim_quote: 'Lock-in period: NA.'
+  source_doc_id: hdfc-gold-etf-fof-page
+  source_chunk_id: hdfc-gold-etf-fof-page#000
+  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.387873+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:48:53.806612+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: min_lumpsum
+  status: found
+  value: ₹100/-
+  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter; Additional Purchase
+    (including switch-in): ₹100/- and any amount thereafter; Redemption (including switch-out): ₹100 and
+    in multiples of ₹1/- thereafter.'
+  source_doc_id: hdfc-gold-etf-fof-kim
+  source_chunk_id: hdfc-gold-etf-fof-kim#042
+  source_content_hash: 1c9b690e44c0b12fd023bfdeb4808bc4204174050f3b63ed185c0a3f6ac68a52
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: '2025-11-21'
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.396072+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:48:34.923928+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: min_sip
+  status: found
+  value: ₹100
+  verbatim_quote: 'Minimum SIP amount: ₹100.'
+  source_doc_id: hdfc-gold-etf-fof-page
+  source_chunk_id: hdfc-gold-etf-fof-page#000
+  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.396072+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:48:22.448814+00:00'
+- scheme_id: hdfc-gold-etf-fof
+  field: riskometer
+  status: found
+  value: High
+  verbatim_quote: 'Riskometer: High.'
+  source_doc_id: hdfc-gold-etf-fof-page
+  source_chunk_id: hdfc-gold-etf-fof-page#000
+  source_content_hash: 0f985b24605073bd0fdbecd80a0b3711649f1aa449bf45dda735531243e74d6c
+  sources_hash: b8347abf6fe6a016d58d32f28019a606271bf5979f9c702b2be0a49173d54778
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.396072+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:49:09.132056+00:00'
+- scheme_id: hdfc-large-cap
+  field: benchmark
+  status: found
+  value: NIFTY 100 (Total Return Index)
+  verbatim_quote: 'Benchmark: NIFTY 100 (Total Return Index).'
+  source_doc_id: hdfc-large-cap-page
+  source_chunk_id: hdfc-large-cap-page#000
+  source_content_hash: 8410267ccf21889dd94ab5a6d9106788af6602bcca39bb67ce298f0b9b88ad44
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: null
+  conflicting: 1
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.401573+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:40:15.629190+00:00'
+- scheme_id: hdfc-large-cap
+  field: exit_load
+  status: found
+  value: In respect of each purchase/switch-in of Units, an Exit Load of 1.00% is payable if Units are
+    redeemed/switched-out within 1 year from the date of allotment. No Exit Load is payable if Units are
+    redeemed/switched-out after 1 year from the date of allotment. No Entry/Exit Load shall be levied
+    on bonus units and units allotted on dividend reinvestment
+  verbatim_quote: In respect of each purchase/switch-in of Units, an Exit Load of 1.00% is payable if
+    Units are redeemed/switched-out within 1 year from the date of allotment. No Exit Load is payable
+    if Units are redeemed/switched-out after 1 year from the date of allotment. No Entry/Exit Load shall
+    be levied on bonus units and units allotted on dividend reinvestment
+  source_doc_id: hdfc-large-cap-page
+  source_chunk_id: hdfc-large-cap-page#002
+  source_content_hash: 8410267ccf21889dd94ab5a6d9106788af6602bcca39bb67ce298f0b9b88ad44
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.404116+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:39:15.148378+00:00'
+- scheme_id: hdfc-large-cap
+  field: expense_ratio
+  status: found
+  value: 1.00%
+  verbatim_quote: 'Total expense ratio (TER): 1.00%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-large-cap-page
+  source_chunk_id: hdfc-large-cap-page#000
+  source_content_hash: 8410267ccf21889dd94ab5a6d9106788af6602bcca39bb67ce298f0b9b88ad44
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.404116+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:39:13.172315+00:00'
+- scheme_id: hdfc-large-cap
+  field: lock_in
+  status: found
+  value: NA
+  verbatim_quote: 'Lock-in period: NA.'
+  source_doc_id: hdfc-large-cap-page
+  source_chunk_id: hdfc-large-cap-page#000
+  source_content_hash: 8410267ccf21889dd94ab5a6d9106788af6602bcca39bb67ce298f0b9b88ad44
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.408764+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:39:46.645751+00:00'
+- scheme_id: hdfc-large-cap
+  field: min_lumpsum
+  status: found
+  value: ₹100/- and any amount thereafter
+  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter'
+  source_doc_id: hdfc-large-cap-kim
+  source_chunk_id: hdfc-large-cap-kim#039
+  source_content_hash: 8758265004cbf5335fe9e63d1dbec88cfa0a09c6d51097b896690d5f1621567e
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: '2025-11-21'
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.412135+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:39:29.538387+00:00'
+- scheme_id: hdfc-large-cap
+  field: min_sip
+  status: found
+  value: ₹100
+  verbatim_quote: 'Minimum SIP amount: ₹100.'
+  source_doc_id: hdfc-large-cap-page
+  source_chunk_id: hdfc-large-cap-page#000
+  source_content_hash: 8410267ccf21889dd94ab5a6d9106788af6602bcca39bb67ce298f0b9b88ad44
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.412135+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:39:16.121618+00:00'
+- scheme_id: hdfc-large-cap
+  field: riskometer
+  status: found
+  value: Very High
+  verbatim_quote: 'Riskometer: Very High.'
+  source_doc_id: hdfc-large-cap-page
+  source_chunk_id: hdfc-large-cap-page#000
+  source_content_hash: 8410267ccf21889dd94ab5a6d9106788af6602bcca39bb67ce298f0b9b88ad44
+  sources_hash: 71de5171dc4a8c84a63380a4a979e20b83e12d280b73175c6bd843d1f79513a6
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.412135+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:40:02.922387+00:00'
+- scheme_id: hdfc-mid-cap
+  field: benchmark
+  status: found
+  value: NIFTY Midcap 150 Index (Total Returns Index)
+  verbatim_quote: 'Benchmark: NIFTY Midcap 150 Index (Total Returns Index).'
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#000
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 1
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.412135+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:41:56.699723+00:00'
+- scheme_id: hdfc-mid-cap
+  field: exit_load
+  status: found
+  value: Exit Load of 1.00% is payable if units are redeemed/switched-out within 1 year from the date
+    of allotment; no Exit Load is payable if units are redeemed/switched-out after 1 year; no Entry/Exit
+    Load shall be levied on bonus units and units allotted on dividend reinvestment.
+  verbatim_quote: In respect of each purchase/switch-in of Units, an Exit Load of 1.00% is payable if
+    Units are redeemed/switched-out within 1 year from the date of allotment. No Exit Load is payable
+    if Units are redeemed/switched-out after 1 year from the date of allotment. No Entry/Exit Load shall
+    be levied on bonus units and units allotted on dividend reinvestment
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#002
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.422246+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:40:37.234957+00:00'
+- scheme_id: hdfc-mid-cap
+  field: expense_ratio
+  status: found
+  value: 0.74%
+  verbatim_quote: 'Total expense ratio (TER): 0.74%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#000
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.422246+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:39:03.222224+00:00'
+- scheme_id: hdfc-mid-cap
+  field: lock_in
+  status: found
+  value: NA
+  verbatim_quote: 'Lock-in period: NA.'
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#000
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.427142+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:41:26.691431+00:00'
+- scheme_id: hdfc-mid-cap
+  field: min_lumpsum
+  status: found
+  value: ₹100
+  verbatim_quote: Yes, SIP as well as Lump Sum investments are permitted with the minimum application
+    amount being ₹100. Any additional purchase must have a minimum amount of ₹100.
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#003
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.428693+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:41:10.647040+00:00'
+- scheme_id: hdfc-mid-cap
+  field: min_sip
+  status: found
+  value: ₹100
+  verbatim_quote: 'Minimum SIP amount: ₹100.'
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#000
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.428693+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:40:56.999834+00:00'
+- scheme_id: hdfc-mid-cap
+  field: riskometer
+  status: found
+  value: Very High
+  verbatim_quote: 'Riskometer: Very High.'
+  source_doc_id: hdfc-mid-cap-page
+  source_chunk_id: hdfc-mid-cap-page#000
+  source_content_hash: 1fc38b2bcb7dee9b6d987e56c4014e7e3a7833eec34de10c9acf17481a259665
+  sources_hash: 966adfa06c7eed00fdea300a33eba081e0725c4bc32fcbbf61dd047f1b87b58b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.433779+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:41:42.988590+00:00'
+- scheme_id: hdfc-multi-cap
+  field: benchmark
+  status: found
+  value: NIFTY500 MultiCap 50:25:25 (TRI)
+  verbatim_quote: 'Benchmark: NIFTY500 MultiCap 50:25:25 (TRI).'
+  source_doc_id: hdfc-multi-cap-page
+  source_chunk_id: hdfc-multi-cap-page#000
+  source_content_hash: 3f311db25dfc92e883da8b0cb224424a9d0252648e7dbb9a8fa48d2b75fcd763
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.436928+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:45:43.207019+00:00'
+- scheme_id: hdfc-multi-cap
+  field: exit_load
+  status: found
+  value: In respect of each purchase / switch-in of Units, an Exit Load of 1.00% is payable if Units are
+    redeemed / switched-out within 1 year from the date of allotment. No Exit Load is payable if Units
+    are redeemed / switched-out after 1 year from the date of allotment.
+  verbatim_quote: In respect of each purchase / switch-in of Units, an Exit Load of 1.00% is payable if
+    Units are redeemed / switched-out within 1 year from the date of allotment. No Exit Load is payable
+    if Units are redeemed / switched-out after 1 year from the date of allotment.
+  source_doc_id: hdfc-multi-cap-page
+  source_chunk_id: hdfc-multi-cap-page#002
+  source_content_hash: 3f311db25dfc92e883da8b0cb224424a9d0252648e7dbb9a8fa48d2b75fcd763
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.436928+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:44:28.347749+00:00'
+- scheme_id: hdfc-multi-cap
+  field: expense_ratio
+  status: found
+  value: 0.95%
+  verbatim_quote: 'Total expense ratio (TER): 0.95%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-multi-cap-page
+  source_chunk_id: hdfc-multi-cap-page#000
+  source_content_hash: 3f311db25dfc92e883da8b0cb224424a9d0252648e7dbb9a8fa48d2b75fcd763
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.436928+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:44:08.106943+00:00'
+- scheme_id: hdfc-multi-cap
+  field: lock_in
+  status: found
+  value: NA
+  verbatim_quote: 'Lock-in period: NA.'
+  source_doc_id: hdfc-multi-cap-page
+  source_chunk_id: hdfc-multi-cap-page#000
+  source_content_hash: 3f311db25dfc92e883da8b0cb224424a9d0252648e7dbb9a8fa48d2b75fcd763
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.445510+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:45:19.513910+00:00'
+- scheme_id: hdfc-multi-cap
+  field: min_lumpsum
+  status: found
+  value: ₹100/-
+  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter'
+  source_doc_id: hdfc-multi-cap-kim
+  source_chunk_id: hdfc-multi-cap-kim#038
+  source_content_hash: 420d216d2f423486911c386ef39741ad223f253c783a561c075a541ba107d83a
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: '2025-11-21'
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.449192+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:45:04.600946+00:00'
+- scheme_id: hdfc-multi-cap
+  field: min_sip
+  status: found
+  value: ₹100
+  verbatim_quote: 'Minimum SIP amount: ₹100.'
+  source_doc_id: hdfc-multi-cap-page
+  source_chunk_id: hdfc-multi-cap-page#000
+  source_content_hash: 3f311db25dfc92e883da8b0cb224424a9d0252648e7dbb9a8fa48d2b75fcd763
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.449192+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:44:47.485290+00:00'
+- scheme_id: hdfc-multi-cap
+  field: riskometer
+  status: found
+  value: Very High
+  verbatim_quote: 'Riskometer: Very High.'
+  source_doc_id: hdfc-multi-cap-page
+  source_chunk_id: hdfc-multi-cap-page#000
+  source_content_hash: 3f311db25dfc92e883da8b0cb224424a9d0252648e7dbb9a8fa48d2b75fcd763
+  sources_hash: e305cbf6b9788f113bfcc8c1433d86b3b88ffb8294378f6df3074285a6ae849f
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.453961+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:45:31.743126+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: benchmark
+  status: found
+  value: Domestic Prices of physical Silver (derived as per regulatory norms)
+  verbatim_quote: 'Benchmark: Domestic Prices of physical Silver (derived as per regulatory norms).'
+  source_doc_id: hdfc-silver-etf-fof-page
+  source_chunk_id: hdfc-silver-etf-fof-page#000
+  source_content_hash: 8effb0c13323b8470a2d31873dc7af4024a1ae09e3700e2c4a967581dda13191
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.456927+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:51:09.162965+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: exit_load
+  status: found
+  value: Exit Load of 1% is payable if Units are redeemed/switched out within 15 days from the date of
+    allotment. No Exit Load is payable if Units are redeemed/switched-out on or after 15 days from the
+    date of allotment.
+  verbatim_quote: Exit Load of 1% is payable if Units are redeemed/switched out within 15 days from the
+    date of allotment. No Exit Load is payable if Units are redeemed/switched-out on or after 15 days
+    from the date of allotment.
+  source_doc_id: hdfc-silver-etf-fof-page
+  source_chunk_id: hdfc-silver-etf-fof-page#004
+  source_content_hash: 8effb0c13323b8470a2d31873dc7af4024a1ae09e3700e2c4a967581dda13191
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.462543+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:49:56.236674+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: expense_ratio
+  status: found
+  value: 0.21%
+  verbatim_quote: 'Total expense ratio (TER): 0.21%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-silver-etf-fof-page
+  source_chunk_id: hdfc-silver-etf-fof-page#000
+  source_content_hash: 8effb0c13323b8470a2d31873dc7af4024a1ae09e3700e2c4a967581dda13191
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.462543+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:49:38.621804+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: lock_in
+  status: found
+  value: NA
+  verbatim_quote: 'Lock-in period: NA.'
+  source_doc_id: hdfc-silver-etf-fof-page
+  source_chunk_id: hdfc-silver-etf-fof-page#000
+  source_content_hash: 8effb0c13323b8470a2d31873dc7af4024a1ae09e3700e2c4a967581dda13191
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.462543+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:50:42.417644+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: min_lumpsum
+  status: found
+  value: ₹100/- and any amount thereafter
+  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter; Additional Purchase
+    (including switch-in): ₹100/- and any amount thereafter; Redemption (including switch-out): ₹100 and
+    in multiples of ₹1/- thereafter. Note: There will be no minimum redemption criterion for Unit based
+    redemption..'
+  source_doc_id: hdfc-silver-etf-fof-kim
+  source_chunk_id: hdfc-silver-etf-fof-kim#036
+  source_content_hash: 60121cd6594225474a9ade646f878963ed290a8a9488f5ac2d0a3e2d1779c002
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: '2025-11-21'
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.470967+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:50:23.376107+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: min_sip
+  status: found
+  value: ₹100
+  verbatim_quote: 'Minimum SIP amount: ₹100.'
+  source_doc_id: hdfc-silver-etf-fof-page
+  source_chunk_id: hdfc-silver-etf-fof-page#000
+  source_content_hash: 8effb0c13323b8470a2d31873dc7af4024a1ae09e3700e2c4a967581dda13191
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.470967+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:50:11.288123+00:00'
+- scheme_id: hdfc-silver-etf-fof
+  field: riskometer
+  status: found
+  value: Very High
+  verbatim_quote: 'Riskometer: Very High.'
+  source_doc_id: hdfc-silver-etf-fof-page
+  source_chunk_id: hdfc-silver-etf-fof-page#000
+  source_content_hash: 8effb0c13323b8470a2d31873dc7af4024a1ae09e3700e2c4a967581dda13191
+  sources_hash: eef1126bb46613ce1fbb9816afdb0841035aec067647a8c4dd2195f267d4496b
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.470967+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:50:55.732288+00:00'
+- scheme_id: hdfc-small-cap
+  field: benchmark
+  status: found
+  value: BSE 250 SmallCap Index (Total Returns Index)
+  verbatim_quote: 'Benchmark: BSE 250 SmallCap Index (Total Returns Index).'
+  source_doc_id: hdfc-small-cap-page
+  source_chunk_id: hdfc-small-cap-page#000
+  source_content_hash: ee27b2d884d960ee4442ea2c3f0afd9371c0a8b3282dfe64e9f080ef3d902800
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: null
+  conflicting: 1
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.480311+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:43:50.657037+00:00'
+- scheme_id: hdfc-small-cap
+  field: exit_load
+  status: found
+  value: In respect of each purchase / switch-in of Units, an Exit Load of 1.00% is payable if Units are
+    redeemed / switched out within 1 year from the date of allotment. No Exit Load is payable if Units
+    are redeemed / switched out after 1 year from the date of allotment.
+  verbatim_quote: In respect of each purchase / switch-in of Units, an Exit Load of 1.00% is payable if
+    Units are redeemed / switched out within 1 year from the date of allotment. No Exit Load is payable
+    if Units are redeemed / switched out after 1 year from the date of allotment.
+  source_doc_id: hdfc-small-cap-page
+  source_chunk_id: hdfc-small-cap-page#004
+  source_content_hash: ee27b2d884d960ee4442ea2c3f0afd9371c0a8b3282dfe64e9f080ef3d902800
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.480311+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:42:34.683125+00:00'
+- scheme_id: hdfc-small-cap
+  field: expense_ratio
+  status: found
+  value: 0.79%
+  verbatim_quote: 'Total expense ratio (TER): 0.79%, including additional expenses and goods and service
+    tax on management fees, if any.'
+  source_doc_id: hdfc-small-cap-page
+  source_chunk_id: hdfc-small-cap-page#000
+  source_content_hash: ee27b2d884d960ee4442ea2c3f0afd9371c0a8b3282dfe64e9f080ef3d902800
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.486410+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:51:29.444704+00:00'
+- scheme_id: hdfc-small-cap
+  field: lock_in
+  status: found
+  value: NA
+  verbatim_quote: 'Lock-in period: NA.'
+  source_doc_id: hdfc-small-cap-page
+  source_chunk_id: hdfc-small-cap-page#000
+  source_content_hash: ee27b2d884d960ee4442ea2c3f0afd9371c0a8b3282dfe64e9f080ef3d902800
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.486961+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:43:21.689594+00:00'
+- scheme_id: hdfc-small-cap
+  field: min_lumpsum
+  status: found
+  value: ₹100/- and any amount thereafter
+  verbatim_quote: 'Purchase (including switch-in): ₹100/- and any amount thereafter'
+  source_doc_id: hdfc-small-cap-kim
+  source_chunk_id: hdfc-small-cap-kim#040
+  source_content_hash: 1a698a988044fc44f5e00fa0ad84bb1f5471a7a550024e926aa4372b58ac0978
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: '2025-11-21'
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.490752+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:43:04.472214+00:00'
+- scheme_id: hdfc-small-cap
+  field: min_sip
+  status: found
+  value: ₹100
+  verbatim_quote: 'Minimum SIP amount: ₹100.'
+  source_doc_id: hdfc-small-cap-page
+  source_chunk_id: hdfc-small-cap-page#000
+  source_content_hash: ee27b2d884d960ee4442ea2c3f0afd9371c0a8b3282dfe64e9f080ef3d902800
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.495458+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:42:52.207249+00:00'
+- scheme_id: hdfc-small-cap
+  field: riskometer
+  status: found
+  value: Very High
+  verbatim_quote: 'Riskometer: Very High.'
+  source_doc_id: hdfc-small-cap-page
+  source_chunk_id: hdfc-small-cap-page#000
+  source_content_hash: ee27b2d884d960ee4442ea2c3f0afd9371c0a8b3282dfe64e9f080ef3d902800
+  sources_hash: ad0dfc3b66d4d55966d8757ec1c57acd95b310688bd006a8455ec7554135f492
+  doc_as_of: null
+  conflicting: 0
+  note: null
+  review_status: approved
+  reviewed_at: '2026-11-12T21:01:04.497550+00:00'
+  model: openai/gpt-oss-120b
+  extracted_at: '2026-11-12T20:43:36.168148+00:00'

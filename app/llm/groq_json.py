@@ -33,6 +33,7 @@ class JSONResult:
     model: str  # the model that actually served the reply
     finish_reason: str
     usage: dict | None = None
+    waited_s: float = 0.0  # time spent waiting out rate limits for this reply
 
 
 class JSONCompleter(Protocol):
@@ -126,6 +127,7 @@ class GroqJSONClient:
         }
         models = [self.model] + ([self.fallback_model] if self.fallback_model else [])
         last_error: Exception | None = None
+        waited = 0.0
         for model in models:
             for attempt in range(self.rate_limit_retries + 1):
                 self._throttle()
@@ -140,7 +142,9 @@ class GroqJSONClient:
                 except groq.RateLimitError as exc:
                     last_error = exc
                     if attempt < self.rate_limit_retries:
-                        self.sleep(_retry_after(exc))
+                        wait = _retry_after(exc)
+                        waited += wait
+                        self.sleep(wait)
                         continue
                     break  # try the fallback model
                 except (
@@ -152,5 +156,7 @@ class GroqJSONClient:
                     break  # try the fallback model
                 except groq.APIStatusError as exc:
                     raise LLMError(f"Groq API error {exc.status_code}") from None
-                return parse_reply(response, model)
+                result = parse_reply(response, model)
+                result.waited_s = waited
+                return result
         raise LLMUnavailable(f"Groq unavailable: {type(last_error).__name__}")
