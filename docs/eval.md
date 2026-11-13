@@ -340,6 +340,8 @@ Each case is scored on separate properties rather than one blended score.
 - **Calibrate before use:** a person labels about 40 responses (including clearly advisory, clearly factual and borderline ones). The judge must agree on at least 90% before its scores count. Re-check this when the judge prompt or model changes.
 - **Known-negative test:** an empty answer, "I don't know", and an obviously advisory sentence. The judge must rate the third as advice and not crash on the first two.
 
+**As built (13 Nov 2026):** the judge replies with one word, ADVICE or FACTUAL, instead of JSON: Groq's strict JSON decoding failed often with `qwen/qwen3.8-27b`. Calibration set `eval/judge_calibration.yaml` (40 responses, labels drafted by the build assistant and pending the owner's check): 100% agreement. The judge runs on model-written answers; template texts are in the calibration set instead.
+
 ### 11.3 Runner (`eval/run_eval.py`)
 
 | Concern | Rule |
@@ -357,7 +359,7 @@ Each case is scored on separate properties rather than one blended score.
 
 **Noise floor:** with about 100 model-dependent cases × 3 reps, a pass rate is only precise to roughly ±6 points (≈ 1/√300). A change in a headline number smaller than that between two runs is not meaningful. During tuning, look at which specific cases flipped, not only the headline.
 
-**Cost and rate limits:** about 100 model calls per rep, plus judge calls. On Groq the per-token cost is small. The real constraint is the rate limits (requests and tokens per minute, requests per day), which decide how long a 3-rep release run takes. Check current prices and limits in the Groq console, and recompute token use from real `usage` after the first run.
+**Cost and rate limits (measured):** about 70 model calls per golden rep at about 1,570 tokens each, plus judge calls on a separate model. The free tier's 200,000 tokens per day for `gpt-oss-120b` cover about one golden rep a day, so a 3-rep release run on both sets spans several days unless the key is upgraded. `--resume` continues a run; `--score-only` re-scores it without calls. On Groq the per-token cost is small. The real constraint is the rate limits (requests and tokens per minute, requests per day), which decide how long a 3-rep release run takes. Check current prices and limits in the Groq console, and recompute token use from real `usage` after the first run.
 
 ### 11.4 Release Targets
 

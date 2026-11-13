@@ -592,7 +592,7 @@ Reports whether the index is loaded, its version and build date, whether the LLM
 
 The API serves JSON only: no page, API docs (`/docs`, `/openapi.json`) turned off, and a `default-src 'none'` Content Security Policy on every response.
 
-**Groq quota (measured 13 Nov 2026).** The current key allows 8,000 tokens per minute and 1,000 requests per day. An answer uses about 1,700 tokens, so about 4 answers per minute fit before rate-limit waits start (paced: p95 0.9 s; back to back: p95 15 s). Each request's log line records `rate_limit_wait_s`. More than a single-user demo needs a higher tier, or `GROQ_FALLBACK_MODEL`. The Streamlit app adds a process-wide limit (`GLOBAL_RATE_LIMIT`) on top of the per-session one.
+**Groq quota (measured 13 Nov 2026).** The current key allows 8,000 tokens per minute, 1,000 requests per day and **200,000 tokens per day** for `gpt-oss-120b` (the daily cap isn't in the response headers; it shows up as a 429). Limits are per Groq organization, so the eval and the deployed app share them. An answer uses about 1,700 tokens, so about 4 answers per minute fit before rate-limit waits start (paced: p95 0.9 s; back to back: p95 15 s). Each request's log line records `rate_limit_wait_s`. More than a single-user demo needs a higher tier, or `GROQ_FALLBACK_MODEL`. The Streamlit app adds a process-wide limit (`GLOBAL_RATE_LIMIT`) on top of the per-session one.
 
 ---
 
@@ -780,6 +780,7 @@ growwChatBot/
 ├── streamlit_app.py              # Streamlit entry point (D12)
 ├── pyproject.toml / uv.lock      # dependencies (CPU-only torch on Linux)
 ├── .env.example                  # every variable in §15
+├── .github/workflows/ci.yml      # lint, tests, deterministic gates, dataset checks, secrets scan
 ├── .streamlit/
 │   ├── config.toml               # no usage stats, no error details, fastReruns off
 │   └── secrets.toml.example      # what to paste into Streamlit Cloud's Secrets
@@ -816,7 +817,7 @@ growwChatBot/
 │   ├── review_facts.py           # approve / reject cards
 │   └── card_export.py            # export approved cards to config/, import on a fresh deploy
 ├── data/                         # gitignored: raw/, processed/, index/, reports/, registry.sqlite
-├── eval/                         # datasets and runners, see eval.md §16
+├── eval/                         # datasets, graders, judge, runners (run_eval, run_smoke, scan_secrets)
 ├── tests/                        # pytest; synthetic fixtures only, no HDFC MF content
 └── docs/                         # problem statement, architecture, plan, edge cases, eval, logs
 ```
@@ -856,7 +857,7 @@ Locally these come from `.env`. On Streamlit Community Cloud they go in the app'
 - **Public deployment needs permission.** HDFC MF's website terms allow downloading its content "for non-commercial and/or personal use only" and forbid using it "for public or commercial purposes… without HDFC AMC's written permission". So the Streamlit app is shared **privately** (Share → "Only specific people can view this app") until that permission exists (§18).
 - **What the repository holds.** Code, configuration and the reviewed fact cards (`config/reviewed_fact_cards.yaml`: short values and quotes, like `eval/fact_labels.yaml`). Page content, PDFs and the index are never committed (`data/` is gitignored).
 - **First start** (`app/bootstrap.py`): with no index present, the app imports the reviewed fact cards into a new registry, fetches the official HDFC MF sources, builds the index (about 40 s locally plus the embedding-model download on the host) and loads the pipeline. Later starts in the same container reuse it. A card whose source page has changed since review is withdrawn (EC-RET-04), and a page that fails the sanity check is left out, so a fresh deployment can serve fewer cards than the local index until the cards are re-reviewed. If the build fails (e.g. the HDFC MF site is unreachable from the host), the app still serves template replies.
-- **Settings**: main file `streamlit_app.py`, Python 3.12 (Advanced settings), and the Secrets from `.streamlit/secrets.toml.example` (`GROQ_API_KEY`, `APP_ENV = "production"`, `MIN_SIMILARITY`, rate limits). Community Cloud installs from `uv.lock`; Linux resolves `torch` to the CPU-only build.
+- **Settings**: main file `streamlit_app.py`, **Python 3.12** (the project requires it; an app created with 3.14 never finishes installing and shows only a spinner — change it under App settings → General, or redeploy), and the Secrets from `.streamlit/secrets.toml.example` (`GROQ_API_KEY`, `APP_ENV = "production"`, `MIN_SIMILARITY`, rate limits). Community Cloud installs from `uv.lock`; Linux resolves `torch` to the CPU-only build.
 - **Refreshing data**: run the monthly routine locally (fetch, review changed cards, `python -m ingestion.card_export export`), commit the updated `config/reviewed_fact_cards.yaml`, then reboot the app so it rebuilds from the current sources.
 - **Local**: `uv sync` → `python -m ingestion.run` → `python -m ingestion.review_facts` → `streamlit run streamlit_app.py`. Optional JSON API: `uvicorn app.main:app`.
 - **Release checks**: see [eval.md](eval.md) §12: fresh-clone test, deployed smoke set, secrets scan, and a passing 3-rep scorecard for the deployed commit and index.
@@ -895,7 +896,7 @@ The phases, tasks and exit criteria are in [implementation-plan.md](implementati
 | Mixed factual + advisory questions are fully refused. | By design (D5). The refusal invites a purely factual question. |
 | PII detection is pattern-based and misses disguised forms ("name at gmail dot com"). | Raw text is never logged; a blocked message is never stored or shown back. |
 | English only. | Hinglish may be understood and answered in English; otherwise `not_found`. Non-English advisory phrasing is left to the LLM's `advisory` status. |
-| Depends on an external LLM API (Groq), including its rate limits and model retirements. The current key allows 8,000 tokens per minute (about 4 answers). | Templates still work when the API is down; factual questions get an "unavailable" reply (503 on the API). Optional fallback model. The model ID is config, and the evals are re-run after any model change. |
+| Depends on an external LLM API (Groq), including its rate limits and model retirements. The current key allows 8,000 tokens per minute (about 4 answers) and 200,000 per day (about 100 answers), shared by the deployed app and the evals. | Templates still work when the API is down; factual questions get an "unavailable" reply (503 on the API). Optional fallback model. The model ID is config, and the evals are re-run after any model change. |
 | A fresh deployment rebuilds the index from the live pages at first start. | Cold start of a minute or more. Cards whose page changed since review are withdrawn; a page failing its sanity check is left out (since 13 Nov 2026 the Silver FoF page has an empty benchmark box, so a fresh deployment has no Silver FoF documents). Re-review and re-export cards after source changes. |
 
 ---

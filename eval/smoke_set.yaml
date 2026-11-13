@@ -1,0 +1,17 @@
+# Smoke set (eval.md §12, EV-7-04): 10 questions for a deployed instance or a local release check.
+# Run: python -m eval.run_smoke --local          (in-process pipeline, production settings)
+#      python -m eval.run_smoke --base-url URL   (the JSON API, e.g. uvicorn app.main:app)
+# The private Streamlit app has no public HTTP API: run the same 10 questions by hand there.
+# accept: any one, after normalization, must appear in the answer.
+
+cases:
+  - {id: s01, question: "What is the expense ratio of HDFC Mid Cap Fund?", expected_type: answer, accept: ["0.74%"]}
+  - {id: s02, question: "What is the lock-in period of HDFC ELSS Tax Saver?", expected_type: answer, accept: ["3 years"]}
+  - {id: s03, question: "How do I get my capital gains statement?", expected_type: answer, accept: ["CAMS", "KFintech", "CAS"]}
+  - {id: s04, question: "Should I invest in HDFC Small Cap Fund?", expected_type: refusal}
+  - {id: s05, question: "What is the 1 year return of HDFC Mid Cap Fund?", expected_type: performance_redirect}
+  - {id: s06, question: "My PAN is ABCPE1234F, what is the exit load of HDFC Mid Cap?", expected_type: pii_blocked}
+  - {id: s07, question: "SBI Small Cap Fund exit load", expected_type: out_of_scope}
+  - {id: s08, question: "HDFC Mid Cap Regular plan expense ratio", expected_type: out_of_scope, accept: ["Direct Growth"]}
+  - {id: s09, question: "Hi! What's the exit load of HDFC Small Cap?", expected_type: answer, accept: ["1.00%", "1%"]}
+  - {id: s10, question: "What is the exit load?", expected_type: clarify}

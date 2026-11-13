@@ -64,19 +64,48 @@ Other commands:
 | `uv run pytest` | Tests (no network, no API calls) |
 | `uv run python -m eval.run_guards` / `run_retrieval` / `run_validator` | Deterministic evaluation gates |
 | `uv run python -m eval.run_generation` | Generation eval with the real model (uses Groq quota) |
+| `uv run python -m eval.run_eval --set golden` | System evaluation (see below) |
+| `uv run python -m eval.run_smoke --local` | 10-question release smoke test |
+| `uv run python -m eval.scan_secrets` | Secrets scan over the whole git history |
 
 ## Deploy on Streamlit Community Cloud
 
 1. **Keep the app private.** HDFC MF's website terms allow its content to be used for personal, non-commercial purposes only. Public use needs HDFC AMC's written permission. After deploying, set **Share → "Only specific people can view this app"**.
-2. In [share.streamlit.io](https://share.streamlit.io), create an app from this repository. Pick the branch, set the main file to `streamlit_app.py`, and set **Advanced settings → Python 3.12**.
+2. In [share.streamlit.io](https://share.streamlit.io), create an app from this repository: branch `main`, main file `streamlit_app.py`, and **Advanced settings → Python version 3.12**. The project requires 3.12; with any other version the install fails and the page only shows a spinner.
 3. In **Advanced settings → Secrets**, paste the contents of [.streamlit/secrets.toml.example](.streamlit/secrets.toml.example) with your real `GROQ_API_KEY`.
 4. Deploy. Community Cloud installs from `uv.lock`; on Linux `torch` comes from the CPU-only PyTorch index, so no CUDA libraries are installed.
 
    The first start fetches the official sources and builds the index, which takes a minute or more. Until then a spinner shows. The sidebar shows the index version once it is loaded.
 
-5. Smoke test: the three example questions, one advisory question ("Should I invest in HDFC Mid Cap?"), one message with a fake PAN.
+5. Smoke test: ask the 10 questions in [eval/smoke_set.yaml](eval/smoke_set.yaml) (the three examples, an advisory question, a returns question, a fake PAN, another fund house, a Regular plan, a greeting with a question, a question without a scheme) and check each reply's type, source link and footer.
+
+### Troubleshooting the deployed app
+
+| What you see | Cause and fix |
+|---|---|
+| Only a spinner; the logs stop after "Provisioning machine…" or show a `uv` error about the Python requirement | The app runs another Python version. App settings → General → Python version → **3.12**, save, then ⋮ → **Reboot app**. If the setting can't be changed, delete the app and redeploy with 3.12 (same subdomain). |
+| "Factual answers are unavailable … the Groq API key isn't configured" | Secrets missing or not saved. App settings → Secrets, then reboot. |
+| "… the search index isn't loaded" | The first-start build failed (e.g. the HDFC MF site was unreachable). Read the logs, then reboot to retry. |
+| "The assistant is temporarily unavailable" on factual questions | Groq rate limit: 8,000 tokens per minute or 200,000 per day on the free tier, shared with any eval runs on the same Groq organization. Wait, or upgrade the key. |
+| Silver FoF questions answer "not found" | HDFC MF's Silver FoF page currently shows no benchmark and fails the ingestion sanity check (since 13 Nov 2026). |
+
+If an API key is ever exposed (in a screenshot, a commit, a chat), delete it in the Groq console, create a new one, and update the app's Secrets and your local `.env`.
 
 Data is never committed: `data/` (raw pages, PDFs, index, registry) is gitignored. A deployment builds its own index from the live sources. A reviewed card whose source page has changed since review is withdrawn until it is reviewed again.
+
+## Evaluation
+
+Every phase has its own checks (see [docs/eval.md](docs/eval.md)); results are logged in [docs/eval-log.md](docs/eval-log.md). The system evaluation runs the real pipeline over a labeled golden set (116 cases) and a held-out set (24 cases, final check only):
+
+```bash
+uv run python -m eval.check_sets                      # dataset checks
+uv run python -m eval.run_eval --oracle               # grader check: expected answers pass
+uv run python -m eval.run_eval --set golden --reps 1  # tuning run
+uv run python -m eval.run_eval --set golden --reps 3  # release run (then --set holdout)
+uv run python -m eval.run_eval --set golden --resume data/reports/eval_<time>_golden   # continue
+```
+
+Scorecards go to `data/reports/eval_<time>_<set>/scorecard.md`. A golden rep uses about 110k Groq tokens, so on the free tier (200,000 per day) a 3-rep release run spans several days. GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint, tests, the deterministic gates, the dataset checks and the secrets scan on every push and pull request.
 
 ## Refreshing the data (monthly)
 
@@ -100,7 +129,7 @@ All settings are environment variables (`.env` locally, Secrets on Streamlit Clo
 ## Known limitations
 
 - **Personal, non-commercial use only** under HDFC MF's terms, so the app stays private until HDFC AMC gives written permission.
-- **Groq quota:** the free key allows about 8,000 tokens per minute, roughly 4 answers per minute. Beyond that, answers wait for the quota; a paid tier or `GROQ_FALLBACK_MODEL` helps.
+- **Groq quota:** the free key allows about 8,000 tokens per minute (roughly 4 answers) and 200,000 tokens per day (roughly 100 answers), shared by the deployed app and any evaluation runs. Beyond that, factual questions get "temporarily unavailable"; a paid tier or `GROQ_FALLBACK_MODEL` helps.
 - **Data freshness:** values are as fresh as the last fetch. Most values on the pages carry no date, so the footer shows when the source was last checked. NAV and returns are never quoted; performance questions link the official factsheet.
 - **Source changes:** a changed page withdraws its reviewed cards until they are reviewed again, and a page that fails its sanity check is left out. Since 13 Nov 2026 the live Silver FoF page shows no benchmark, so a fresh build leaves it out and Silver FoF questions get "not found" with a link to its page until HDFC MF fixes the page.
 - **One scheme per answer:** questions about several schemes get a request to ask one at a time (one citation per answer).
