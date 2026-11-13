@@ -34,7 +34,9 @@ ADVISORY = {
     "portfolio": r"\b(my portfolio|portfolio allocation|asset allocation for me|diversify)\b",
     "suitability": r"\b(suitab\w*|suit (?:me|my)|right for me|good for me|ideal for)\b",
     "ratings": r"\b(rating|ratings|rated|star|stars|crisil rank|morningstar|value research)\b",
-    "prediction": r"\b(will (?:it|the nav|nav|this|the fund|the scheme|hdfc [\w ]{0,30}?) "
+    # A short "of <scheme>" may sit in between: "Will the NAV of HDFC Mid Cap go up?" (Phase 6).
+    "prediction": r"\b(will (?:it|the nav|nav|this|the fund|the scheme|hdfc [\w ]{0,30}?)"
+    r"(?: of [\w -]{1,40}?)? "
     r"(?:go|rise|fall|grow|increase|decrease|double|crash|give|beat)|predict\w*|forecast\w*"
     r"|outlook|future (?:returns?|performance|growth))\b",
     "choose": r"\b(sip or lump ?sum|lump ?sum or sip|direct or regular|regular or direct"
@@ -57,7 +59,9 @@ PERFORMANCE = {
     r"|performed|perform)\b",
     "earnings": r"\bhow much (?:will|would|can|could) (?:i|my money|it) "
     r"(?:earn|get|make|grow|become)"
-    r"|\bhow did (?:the|this|hdfc) [\w ]{0,40}?(?:fund|scheme)? ?do\b|\bgrowth of\b",
+    r"|\bhow did (?:the|this|hdfc) [\w ]{0,40}?(?:fund|scheme)? ?do\b|\bgrowth of\b"
+    # "What would ₹10,000 invested in HDFC Mid Cap be worth now?" (Phase 6, EC-RET-06)
+    r"|\binvested\b.{0,60}\b(?:be )?worth\b|\bvalue of (?:my |an? )?investment\b",
     "nav": r"\b(nav|net asset value|unit price|price today|current price)\b",
 }
 

@@ -56,6 +56,7 @@ class Trace:
     scheme_id: str | None = None
     fields: list[str] = field(default_factory=list)
     chunk_ids: list[str] = field(default_factory=list)
+    source_id: str = ""  # the chunk the accepted answer cites
     best_similarity: float | None = None
     llm_status: str = ""
     llm_attempts: int = 0
@@ -228,6 +229,7 @@ class Pipeline:
             )
             trace.validator.append(check.checks)
             if check.ok:
+                trace.source_id = reply.source_id
                 response = c.answer(reply.answer, cited)
                 return response if response is not None else c.not_found(scheme_id)
             turns = [

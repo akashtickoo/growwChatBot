@@ -1,0 +1,47 @@
+# Checks that need no index, no network sources and no API key (Phase 7).
+# The retrieval, generation and system evals need the local index and Groq quota, so they run
+# by hand (README, "Evaluation").
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the secrets scan reads the whole history
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install (CPU-only torch on Linux, from uv.lock)
+        run: uv sync --frozen
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: Guard and validator gates (EV-4A, EV-4C-01/02)
+        run: |
+          uv run python -m eval.run_guards
+          uv run python -m eval.run_validator
+
+      - name: Evaluation datasets (eval.md §11.1)
+        run: uv run python -m eval.check_sets
+
+      - name: Secrets scan (EV-7-05)
+        run: uv run python -m eval.scan_secrets

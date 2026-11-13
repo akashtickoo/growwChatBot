@@ -577,59 +577,61 @@ The footer date (D2) should be read from the `documents` table by `doc_id` when 
 
 ## Phase 6: Evaluation and Tuning
 
+**Status:** tooling built and checked on 13 Nov 2026; first golden run 85/116 cases done. The rest of the golden run, the held-out run and the 3-rep release run wait for Groq quota: the key allows **200,000 tokens per day** for `gpt-oss-120b` (about 100 answers), shared with the deployed app. See [eval-log.md](eval-log.md).
+
 **Goal:** measure the system against the §12 targets and tune it until they are met.
 
 **Depends on:** Phases 3 and 5.
 
 ### Tasks
 
-**Golden set (`eval/golden_set.yaml`)**
+**Golden and held-out sets (`eval/golden_set.yaml`, `eval/holdout_set.yaml`, `eval/build_sets.py`)**
 
-- [ ] Write about 80 labeled questions using the groups in §12.1.
-- [ ] Add every case marked **E** in [edge-case.md](edge-case.md). This takes the set to roughly 130 questions.
-- [ ] Take expected values from `eval/fact_labels.yaml` (Phase 1) and the live official sources, read by a person. Never copy them from system output.
-- [ ] For lock-in questions on non-ELSS schemes, the expected result depends on what the pages state: a factual answer if a source says so, otherwise `not_found`.
-- [ ] Hold back about 20 questions, ideally written by someone else, and use them only for the final check to avoid tuning to the test.
+- [x] A pool of 140 cases in the eval.md §11.1 groups: 42 fact (7 schemes × 6 fields) + ELSS lock-in, 10 paraphrases and typos, 6 process (statement pages), 10 advisory, 8 factual-with-advisory-words, 8 performance / NAV / ratings, 6 PII (made-up values), 8 not covered, 6 clarify, 35 edge cases.
+- [x] Every edge case marked **E** in [edge-case.md](edge-case.md) has at least one case (`edge_case_ref`); a case may allow two outcomes where edge-case.md does (e.g. Hinglish: answer or `not_found`).
+- [x] Fact values from `eval/fact_labels.yaml` (Phase 1, read from the pages before any extraction); other expected phrases read from the official pages. Never from system output. Pending: the EV-1-07 human spot-check of the labels.
+- [x] Non-ELSS lock-in: answer ("NA" / no lock-in, as the pages state) or `not_found`.
+- [x] Held-out set: 24 cases drawn at random per group (seed 20261113) before any tuning; 116 golden. Not written by a second person (eval.md asks for 5–10 extra held-out questions from someone else: still open).
+- [x] `python -m eval.check_sets`: schema, duplicates, groups, edge-case ids, cited documents, no overlap. Passes.
 
-**Eval runner (`eval/run_eval.py`)**
+**Graders, judge and runner (`eval/graders.py`, `eval/judge.py`, `eval/run_eval.py`)**
 
-- [ ] Run each question through the real pipeline.
-- [ ] Check: response type, expected value (normalized match), cited document, format rules (≤ 3 sentences, one link, footer), and that PII cases never reached the LLM client.
-- [ ] Check citation validity: URL on the allowlist, HTTP 200, and the fact's text present in the fetched document.
-- [ ] Write a scorecard to `data/reports/eval_<date>.md` listing every failure.
+- [x] Graders separate from the app's validator: type, value (normalized, with number boundaries), grounding against the cited chunk, citation document, live citation validity (allowlist, HTTP 200, value on the freshly fetched page), format, advice phrases, PII not forwarded or logged, not-covered misroutes, refusals and false refusals, latency and tokens.
+- [x] Oracle run 116/116 pass, null run 0/116 pass. The oracle run found two grader bugs, both fixed: "1%" matched inside "0.21%", and scheme pages show the TER as a bare "0.79" without "%".
+- [x] Advice judge `qwen/qwen3.8-27b` (the only non-gpt-oss model on the key), one-word ADVICE/FACTUAL reply: strict JSON failed often with this model. Calibration on `eval/judge_calibration.yaml` (40 responses): 100% agreement, known-negative test passes. **Labels drafted by the build assistant; the owner should confirm them.**
+- [x] Runner: real pipeline with production settings, instrumented LLM client (calls per case), log capture, pacing under 8,000 tokens/min (waits kept out of latency), template-only cases run once, `--resume`, `--score-only`, `--oracle`, `--null`, results / errors / scorecard in `data/reports/eval_<time>_<set>/`.
+
+**First golden run (1 rep, 13 Nov 2026, 85 of 116 cases; daily cap reached)**
+
+- [x] Grounding, citation correctness, citation validity, format compliance: 100%. Advice in any response: 0 (judge on 35 answers). False refusals 0%. PII 5/5 blocked with no LLM call and nothing in the logs. Not-covered 7/7, performance 7/7. p95 1.36 s, 1,568 tokens per answer.
+- [x] Four failures, read one by one:
+  - [x] `edge-int-09` "Will the NAV of HDFC Mid Cap go up next month?" got the NAV redirect: the prediction rule missed "the NAV *of …* go up". **Fixed** (rule allows a short "of <scheme>"); guard eval still passes.
+  - [x] `edge-ret-06` "What would ₹10,000 invested … be worth now?" was refused by the LLM. **Fixed** with a performance rule ("invested … worth", "value of investment"): it now gets the factsheet redirect without an LLM call.
+  - [ ] `edge-in-10` (five facts at once): the model returned `insufficient_context` instead of answering three. Proposed prompt change, not yet verified: rule 3 adds "If it asks for more than 3, answer the first 3 that SOURCES support and leave the rest out; do not return "insufficient_context" only because more than 3 were asked."
+  - [ ] `edge-perf-06` (AUM): the answer left out "as on 31/10/2026". Proposed prompt change, not yet verified: rule 7 becomes "When the source states a date next to the value you give (for example "as on 31/10/2026"), include that date in your answer."
+- [ ] Finish the golden run: `python -m eval.run_eval --set golden --resume data/reports/eval_20261113T032729Z_golden` (31 model-dependent cases left).
+- [ ] Try the prompt change above on the golden set (`--reps 1`); keep it only if no passing case breaks.
+- [ ] Held-out run, then the 3-rep release run on golden and held-out (about 480k tokens: several days on the free tier, or upgrade to Groq's Dev tier).
 
 **Tuning loop**
 
-- [ ] Change one thing at a time, then re-run: `MIN_SIMILARITY`, intent rules, aliases, field keywords, prompt wording, fact-card boost.
-- [ ] Record each change and its effect in the scorecard history.
-- [ ] Consider the cross-encoder reranker (§6.5) only if ranking errors remain.
-
-**Cost**
-
-- [ ] Each full run makes about 100 LLM calls once the edge cases are included (template responses are free). Groq's rate limits (requests and tokens per minute, requests per day) matter more than price here: throttle the runner to stay under them, and record rate-limit waits separately from latency. Measure real token usage from each response's `usage`.
+- [x] One change at a time, cases that flipped read by hand (the two rule fixes above).
+- [x] `MIN_SIMILARITY` 0.63 kept: no golden case fell below it wrongly, and no off-topic case got through in the run so far.
+- [ ] Cross-encoder reranker: not needed so far (no ranking errors seen).
 
 ### Deliverables
 
-- `eval/golden_set.yaml`, `eval/run_eval.py`, scorecards in `data/reports/`.
+- [x] `eval/golden_set.yaml`, `eval/holdout_set.yaml`, `eval/build_sets.py`, `eval/cases.py`, `eval/check_sets.py`, `eval/graders.py`, `eval/judge.py`, `eval/judge_calibration.yaml`, `eval/run_eval.py`, `tests/test_eval_graders.py`, scorecards in `data/reports/`.
 
 ### Exit criteria
 
-All §12.2 targets met on the full set and on the held-back questions:
-
-| Metric | Target |
-|---|---|
-| Factual accuracy | ≥ 95% |
-| Citation validity | 100% |
-| Format compliance | 100% |
-| Advisory refusal recall | 100% |
-| False refusals on factual questions | ≤ 5% |
-| PII blocked before the LLM | 100% |
+- [ ] All §12.2 targets met on the full golden set and on the held-out set, with a 3-rep run. Blocked on Groq quota; the partial run meets every target except the two cases above.
 
 ---
 
 ## Phase 7: Docs, Packaging and Deployment
 
-**Status:** started 13 Nov 2026. README written and the repository is ready for Streamlit Community Cloud; the app itself is deployed from the Streamlit Cloud dashboard by the owner.
+**Status:** 13 Nov 2026. README, CI, smoke set and secrets scan done; the private Streamlit app is deployed from `main` and needed its Python version changed to 3.12 (see below). Release checks that need a 3-rep scorecard wait for Phase 6.
 
 **Goal:** the required deliverables and a running private deployment.
 
@@ -639,46 +641,55 @@ All §12.2 targets met on the full set and on the held-back questions:
 
 **README (required by the problem statement)**
 
-- [x] Setup: prerequisites, `uv sync`, `.env`, `python -m ingestion.run`, fact-card extraction and review, card export, `streamlit run streamlit_app.py`.
+- [x] Setup: prerequisites (Python 3.12, uv, Groq key), `uv sync`, `.env`, ingestion, fact-card review and export, `streamlit run streamlit_app.py`.
 - [x] Selected AMC and the 7 schemes.
-- [x] Architecture overview of the RAG approach, with a link to `docs/architecture.md`.
-- [x] Known limitations (§18).
+- [x] Architecture overview of the RAG approach, with links to the docs.
+- [x] Known limitations (§18), including the Groq daily cap.
 - [x] Disclaimer snippet: **"Facts-only. No investment advice."**
+- [x] Deployment steps and troubleshooting for Streamlit Community Cloud, evaluation and release commands.
 
 **Packaging**
 
-- [x] Dependencies in `pyproject.toml` + `uv.lock`, which Community Cloud installs. Linux resolves `torch` to the CPU-only build (no CUDA libraries).
-- [x] Index strategy: never committed. A fresh deployment builds it from the official sources at first start, with the reviewed fact cards from `config/reviewed_fact_cards.yaml`.
-- [ ] Optional: a Dockerfile for other hosts (slim Python base, `uv sync --frozen`, non-root user, health check).
+- [x] Dependencies in `pyproject.toml` + `uv.lock`, which Community Cloud installs. Linux resolves `torch` to the CPU-only build.
+- [x] Index never committed; a fresh deployment builds it at first start with the reviewed fact cards.
+- [ ] Optional Dockerfile: not done. Streamlit Community Cloud is the target, and Docker isn't available here to build and check an image (EV-7-03).
+
+**Continuous integration (`.github/workflows/ci.yml`)**
+
+- [x] On every push to `main` and every pull request: `uv sync --frozen` on Python 3.12, ruff, pytest, the guard and validator gates, the dataset checks and the secrets scan. Evals that need the index or Groq run by hand.
 
 **Deployment (Streamlit Community Cloud)**
 
-- [ ] **Keep the app private** (Share → only specific people) until HDFC AMC gives written permission for public use. Their terms allow personal, non-commercial use only (architecture §16).
-- [ ] Create the app: repository `akashtickoo/growwChatBot`, the deployed branch, main file `streamlit_app.py`, Python 3.12.
-- [ ] Secrets: paste `.streamlit/secrets.toml.example` with the real `GROQ_API_KEY`.
-- [ ] Smoke test the deployed app: the three example questions, one advisory question, one PII message; check the sidebar's index version.
+- [x] App private: "Only specific people can view this app" (owner's screenshot, 13 Nov 2026).
+- [x] App deployed from `akashtickoo/growwChatBot`, branch `main`, `streamlit_app.py`.
+- [x] Secrets set (`GROQ_API_KEY`, `APP_ENV`, `MIN_SIMILARITY`, rate limits).
+- [ ] **Python version: the app was created with 3.14**, so `uv` refused to install (`requires-python ==3.12.*`) and the page stayed on a spinner. Set App settings → General → Python version → **3.12**, save and reboot (or delete and redeploy with 3.12).
+- [ ] **Rotate the Groq key**: it was visible in a settings screenshot shared on 13 Nov 2026. Create a new key, update the app's Secrets and the local `.env`, delete the old key.
+- [ ] Smoke test the deployed app by hand with the 10 questions in `eval/smoke_set.yaml` (the private app has no public HTTP API); check the sidebar shows the index (about 417 passages).
+
+**Release checks (eval.md §12)**
+
+- [ ] EV-7-01 fresh clone by someone other than the author (the author's fresh-clone run passed: 287 tests, index built in 48 s).
+- [x] EV-7-02 README deliverables present.
+- [ ] EV-7-03 Docker image: not applicable (no Dockerfile, see above).
+- [x] EV-7-04 smoke set: `python -m eval.run_smoke --local` passed 6/6 template cases; the 4 model cases need Groq quota. Deployed app: by hand.
+- [x] EV-7-05 secrets scan over the full history: 0 findings (`python -m eval.scan_secrets`, also in CI). The leaked key was in a screenshot, never in git.
+- [ ] EV-7-06 index: a deployment builds its own index from the live pages, so its version differs from the evaluated one; compare the passage and card counts instead (local 479 / 49, fresh build 417 / 42 while the Silver FoF page fails its check).
+- [ ] EV-7-07 a passing 3-rep scorecard for this commit (Phase 6).
 
 **Refresh routine**
 
 - [x] Runbook in the README.
-- [ ] Optional: a scheduled job (e.g. GitHub Actions cron) that runs ingestion monthly and opens a report for review.
-
-### Release checklist
-
-- [ ] All tests pass.
-- [ ] Latest eval scorecard meets the targets.
-- [ ] The deployed app shows the expected index version in the sidebar.
-- [ ] Disclaimer visible in the deployed UI.
-- [ ] No secrets or `data/` files committed.
+- [ ] Optional scheduled ingestion job: not done. Each refresh needs a person to review changed fact cards, so it stays a manual monthly routine.
 
 ### Deliverables
 
-- README, Streamlit Community Cloud configuration, deployed private app.
+- README, `.github/workflows/ci.yml`, `eval/smoke_set.yaml`, `eval/run_smoke.py`, `eval/scan_secrets.py`, the private Streamlit app.
 
 ### Exit criteria
 
-- A fresh clone runs by following only the README.
-- The deployed app passes the smoke test.
+- [ ] A fresh clone runs by following only the README (by someone other than the author).
+- [ ] The deployed app passes the smoke test.
 
 ---
 
@@ -727,6 +738,6 @@ How each problem-statement requirement is built and checked.
 | Table parsing errors in exit-load or expense-ratio tables | 2, 3 | Verbatim-quote check and human review of every card. |
 | Intent rules refuse too many factual questions | 4A, 6 | Measure false refusals in the eval and adjust the rules. |
 | Groq retires or changes the chosen model | 4C, 6 | The model ID is config. Re-run the generation and golden-set evals after any model change. The client sits behind an interface, so changes stay local. |
-| Groq rate limits slow evaluation or fail live requests | 4C, 6 | Throttled eval runner, retries that respect `retry-after`, optional `GROQ_FALLBACK_MODEL`, and a friendly `503`. |
+| Groq rate limits slow evaluation or fail live requests | 4C, 6 | Throttled eval runner, retries that respect `retry-after`, optional `GROQ_FALLBACK_MODEL`, and a friendly `503`. The free tier's 200,000 tokens per day are shared by the eval and the deployed app: a release eval spans several days or needs the Dev tier. |
 | Eval tuning overfits to the golden set | 6 | Held-back questions used only for the final check. |
 | API cost during development | 3, 6 | Fake LLM in tests, re-extract fact cards only on changed documents, run the eval deliberately. |
